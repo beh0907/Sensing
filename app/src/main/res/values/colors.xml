@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#202020</color>
+    <color name="colorPrimaryDark">#202020</color>
+    <color name="colorPrimaryLight">#25252f</color>
+    <color name="colorAccent">#4698CE</color>
+    <color name="textColorHint">#60607D8B</color>
+    <color name="textColorPrimary">#46B0CE</color>
+    <color name="textColorPrimaryDark">#F7CF31</color>
+    <color name="navigationBarColor">#2D2D32</color>
+    <color name="colorLightGray">#802D2D32</color>
+
+    <color name="colorSecond">#4698CE</color>
+    <color name="colorThird">#46B0CE</color>
+
+
+    <color name="lightGray">#EEE</color>
+    <color name="blue_grey_500">#607D8B</color>
+    <color name="blue_grey_600">#546E7A</color>
+    <color name="blue_grey_700">#455A64</color>
+    <color name="blue_grey_800">#37474F</color>
+    <color name="blue_grey_900">#263238</color>
+
+
+    <color name="black">#000000</color>
+    <color name="white">#ffffff</color>
+    <color name="blue_grey">#455A64</color>
+    <color name="red">#F44336</color>
+    <color name="pink">#FC75E9</color>
+    <color name="purple">#9C27B0</color>
+    <color name="deep_purple">#673AB7</color>
+    <color name="indigo">#3F51B5</color>
+    <color name="blue">#2196F3</color>
+    <color name="light_blue">#4bb0fc</color>
+    <color name="cyan">#00BCD4</color>
+    <color name="teal">#009688</color>
+    <color name="green">#4CAF50</color>
+    <color name="light_green">#8BC34A</color>
+    <color name="lime">#CDDC39</color>
+    <color name="yellow">#FFEB3B</color>
+    <color name="amber">#FFC107</color>
+    <color name="orange">#FF9800</color>
+    <color name="deep_orange">#FF5722</color>
+
+
+    <color name="pastel_red">#e75454</color>
+    <color name="green_blue">#00ca9d</color>
+
+    <color name="transparent">#00000000</color>
+    <color name="colorInactive">#80747474</color>
+
+    <color name="grapefruit_normal">#ED5565</color>
+    <color name="grapefruit_dark">#DA4453</color>
+
+    <color name="bittersweet_normal">#FC6E51</color>
+    <color name="bittersweet_dark">#E9573F</color>
+
+    <color name="sunflower_normal">#FFCE54</color>
+    <color name="sunflower_dark">#F6BB42</color>
+
+    <color name="grass_normal">#A0D468</color>
+    <color name="grass_dark">#8CC152</color>
+
+    <color name="mint_normal">#48CFAD</color>
+    <color name="mint_dark">#37BC9B</color>
+
+    <color name="aqua_normal">#4FC1E9</color>
+    <color name="aqua_dark">#3BAFDA</color>
+
+    <color name="blue_jeans_normal">#5D9CEC</color>
+    <color name="blue_jeans_dark">#4A89DC</color>
+
+    <color name="lavander_normal">#AC92EC</color>
+    <color name="lavander_dark">#967ADC</color>
+
+    <color name="line_1">#1150CF</color>
+    <color name="line_2">#16C52E</color>
+    <color name="line_3">#FD9220</color>
+    <color name="line_4">#4BBCFE</color>
+    <color name="line_5">#9C52FE</color>
+    <color name="line_6">#9C745A</color>
+    <color name="line_7">#A69D2A</color>
+    <color name="line_8">#FA569F</color>
+    <color name="line_9">#EAB14C</color>
+    <color name="line_airport">#60D4FE</color>
+    <color name="line_bundang">#FDCD3A</color>
+    <color name="line_ever">#31C2A5</color>
+    <color name="line_gyeongchun">#8DC1CA</color>
+    <color name="line_incheon_1">#5FBAED</color>
+    <color name="line_incheon_2">#E99100</color>
+    <color name="line_gyeonguijung">#44D4D4</color>
+    <color name="line_gyeonggang">#2A4CFD</color>
+    <color name="line_shinbundang">#FD2F49</color>
+    <color name="line_suin">#FDB500</color>
+    <color name="line_uijeongbu">#FDB500</color>
+
+    <color name="focus">#64ffffff</color>
+    <color name="nonfocus">#00ffffff</color>
+
+    <color name="userColor1">#f44336</color>
+    <color name="userColor2">#e91e63</color>
+    <color name="userColor3">#9c27b0</color>
+    <color name="userColor4">#673ab7</color>
+    <color name="userColor5">#3f51b5</color>
+    <color name="userColor6">#2196f3</color>
+    <color name="userColor7">#03a9f4</color>
+    <color name="userColor8">#00bcd4</color>
+    <color name="userColor9">#009688</color>
+    <color name="userColor10">#4caf50</color>
+    <color name="userColor11">#8bc34a</color>
+    <color name="userColor12">#cddc39</color>
+    <color name="userColor13">#ffeb3c</color>
+    <color name="userColor14">#ffc107</color>
+    <color name="userColor15">#ff9800</color>
+    <color name="userColor16">#ff5722</color>
+
+    <color name="color_gray_66">#666666</color>
+
+    <integer-array name="userColocArray">
+        <item> @color/userColor1</item>
+        <item> @color/userColor2</item>
+        <item> @color/userColor3</item>
+        <item> @color/userColor4</item>
+        <item> @color/userColor5</item>
+        <item> @color/userColor6</item>
+        <item> @color/userColor7</item>
+        <item> @color/userColor8</item>
+        <item> @color/userColor9</item>
+        <item> @color/userColor10</item>
+        <item> @color/userColor11</item>
+        <item> @color/userColor12</item>
+        <item> @color/userColor13</item>
+        <item> @color/userColor14</item>
+        <item> @color/userColor15</item>
+        <item> @color/userColor16</item>
+    </integer-array>
+
+
+</resources>

@@ -1,0 +1,98 @@
+apply plugin: 'com.android.application'
+
+android {
+
+    aaptOptions {
+        noCompress "tflite"
+        noCompress "lite"
+    }
+
+    compileSdkVersion 29
+    defaultConfig {
+        applicationId "com.coretec.sensing"
+        minSdkVersion 28
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('C:/Users/PIH/Desktop/Android ProJect/ProJect Keystore/sensing.jks')
+            // 기준은 App 폴더 기준이다.
+            storePassword "core4211"
+            keyAlias "sensing"
+            keyPassword "core4211"
+        }
+    }
+
+    buildTypes {
+        release {
+            ext.enableCrashlytics = false
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+
+    dataBinding {
+        enabled = true
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    //안드로이드 서포트
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.appcompat:appcompat:1.3.0-alpha01'
+    implementation 'com.google.android.material:material:1.3.0-alpha01'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.2.0-alpha03'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+
+    //ted 라이브러리
+    implementation 'gun0912.ted:tedpermission:2.2.2'
+    implementation 'gun0912.ted:tedbottompicker:2.0.0-alpha1'
+
+    testImplementation 'junit:junit:4.13'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+
+    //csv 라이브러리
+    implementation group: 'com.opencsv', name: 'opencsv', version: '5.1'
+
+    //glide 라이브러리
+    implementation 'com.github.bumptech.glide:glide:4.11.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
+
+    //lomkob 설정
+    implementation 'org.projectlombok:lombok:1.18.12'
+    implementation 'org.glassfish:javax.annotation:10.0-b28'
+    annotationProcessor 'org.projectlombok:lombok:1.18.12'
+
+    //UI 라이브러리
+    implementation 'devlight.io:navigationtabbar:1.2.5'
+
+    //텐서플로우 관련 라이브러리
+    implementation 'org.tensorflow:tensorflow-lite:2.1.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.1.0'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.0.0-nightly'
+    implementation 'com.google.flatbuffers:flatbuffers-java:1.12.0'
+
+    //최단거리 경로 알고리즘 라이브러리
+    implementation 'com.github.wtw-software:DijkstraLib:3.1'
+}
