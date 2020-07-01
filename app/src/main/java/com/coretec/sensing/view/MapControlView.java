@@ -202,33 +202,9 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
                 savedMatrix.set(matrix);
                 start.set(event.getX(), event.getY());
                 mode = Const.DRAG;
-
-                float[] value = new float[9];
-                matrix.getValues(value);
-
-                moveImageView = mapActivity.getImageViewPosition(event.getX(), event.getY(), matrix, value[0]);
-
-                if (moveImageView != null)
-                    startTimeout();
                 break;
 
             case MotionEvent.ACTION_MOVE:
-                if (moveImageView != null) {
-
-                    if (Math.abs(event.getX() - start.x) > scaledTouchSlope || Math.abs(start.y - event.getY()) > scaledTouchSlope)
-                        stopTimeout();
-
-                    value = new float[9];
-                    matrix.getValues(value);
-
-                    float[] pixelPoint = getTouchPixel(event.getX(), event.getY() + 300, matrix);
-                    float[] meterPoint = pointPixelToMeter(pixelPoint);
-
-                    Log.d("터치 -> 미터 변환", meterPoint[0] + " - " + meterPoint[1]);
-
-                    mapActivity.setImageViewPosition(moveImageView, pixelPoint, meterPoint);
-                    return true;
-                }
 
                 switch (mode) {
                     case Const.DRAG:
@@ -252,16 +228,6 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
                     moveImageView = null;
                     return true;
                 }
-
-                //10픽셀 이상 움직이지 않았을 경우 한 부분 터치로 인식 함
-                if (start.x + 10 > event.getX() && start.x - 10 < event.getX() && start.y + 10 > event.getY() && start.y - 10 < event.getY()) {
-                    //포인트 추가
-                    Log.d("포인트 추가", "추가+++");
-                    mapActivity.addTouchPoint(getTouchPixel(event.getX(), event.getY(), matrix));
-
-                    //해당 좌표로 이동
-//                    matrix.postTranslate(touchLocation[0], touchLocation[1]);
-                }
                 break;
 
             case MotionEvent.ACTION_POINTER_DOWN:
@@ -276,10 +242,6 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
 
             case MotionEvent.ACTION_POINTER_UP:
                 mode = Const.NONE;
-                break;
-
-            case MotionEvent.ACTION_CANCEL:
-                stopTimeout();
                 break;
         }
 
@@ -330,7 +292,7 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
         float[] value = new float[9];
         matrix.getValues(value);
 
-        value[0] = value[4] = 1f;
+        value[0] = value[4] = 0.2f;
 
         matrix.setValues(value);
         matrix.postTranslate(-x, -y);
@@ -444,25 +406,12 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
     }
 
 
-    public void startTimeout() {
-        isLongPressed = false;
-        mHandler.postDelayed(longPressCheckRunnable, longPressTimeout);
-    }
-
-
-    public void stopTimeout() {
-        if (!isLongPressed)
-            mHandler.removeCallbacks(longPressCheckRunnable);
-    }
-
-
     private class LongPressCheckRunnable implements Runnable {
         @Override
         public void run() {
             isLongPressed = true;
             if (moveImageView != null) {
                 moveImageView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-                mapActivity.deleteImageView(moveImageView);
 
                 //터치 이벤트 강제로 종료
                 new Thread(new Runnable() {

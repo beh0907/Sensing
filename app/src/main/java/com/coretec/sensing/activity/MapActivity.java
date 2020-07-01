@@ -30,11 +30,13 @@ import androidx.databinding.DataBindingUtil;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.bumptech.glide.Glide;
 import com.coretec.sensing.R;
 import com.coretec.sensing.adapter.PointAdapter;
 import com.coretec.sensing.databinding.ActivityMapBinding;
 import com.coretec.sensing.databinding.ContentMapBinding;
 import com.coretec.sensing.dialog.AlarmDialog;
+import com.coretec.sensing.dialog.ListDialog;
 import com.coretec.sensing.listener.OnTouchMapListener;
 import com.coretec.sensing.listener.RecyclerViewClickListener;
 import com.coretec.sensing.model.Link;
@@ -71,15 +73,25 @@ import static com.coretec.sensing.utils.Const.BOTTOM_BLANK_METER;
 import static com.coretec.sensing.utils.Const.LEFT_BLANK_METER;
 import static com.coretec.sensing.utils.Const.PIXEL_PER_METER;
 
-public class MapActivity extends AppCompatActivity implements OnTouchMapListener, NavigationView.OnNavigationItemSelectedListener, View.OnClickListener, Spinner.OnItemSelectedListener {
+public class MapActivity extends AppCompatActivity implements OnTouchMapListener, NavigationView.OnNavigationItemSelectedListener, View.OnClickListener {
 
     private ActivityMapBinding activityBinding;
     private ContentMapBinding contentBinding;
     private ArrayList<MoveImageView> listPointImage = new ArrayList<>();
-    private ArrayList<Point> pointArrayList;
-    private PointAdapter pointAdapter;
 
-    private ArrayList<Integer> markerImage = new ArrayList<>();
+    private PoiHelper poiHelper = new PoiHelper();
+    private NodeHelper nodeHelper = new NodeHelper();
+    private LinkHelper linkHelper = new LinkHelper();
+
+    private ArrayList<Poi> poiArrayList;
+    private ArrayList<Node> nodeArrayList;
+    private ArrayList<Link> linkArrayList;
+    private LinkedList<Vertex> path;
+
+    private Graph pathGraph;
+
+    private int pathDistance;
+    private boolean isPlaying = false;
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -127,7 +139,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             activityBinding.drawerLayout.closeDrawer(activityBinding.navView);
             return;
         }
-;;
+        ;
+        ;
         finish();
     }
 
@@ -139,38 +152,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             @Override
             public void onPermissionGranted() {
                 init();
-                initList();
-                loadMarkerImage();
+                initPath();
                 loadMapImage();
                 setBackgroundPosition();
-
-                PoiHelper poiHelper = new PoiHelper();
-                NodeHelper nodeHelper = new NodeHelper();
-                LinkHelper linkHelper = new LinkHelper();
-
-                ArrayList<Poi> poiArrayList = poiHelper.selectAllPoiList();
-                ArrayList<Node> nodeArrayList = nodeHelper.selectAllNodeList();
-                ArrayList<Link> linkArrayList = linkHelper.selectAllLinkList();
-
-                ArrayList<Edge> edgeArrayList = new ArrayList<>();
-                for (Link link : linkArrayList) {
-                    edgeArrayList.add(new Edge(new Vertex<>(link.getNode_start()), new Vertex<>(link.getNode_end()), link.getWeight_p()));
-                }
-                Graph pathGraph = new Graph(edgeArrayList);
-
-                DijkstraAlgorithm dijkstraAlgorithm = new DijkstraAlgorithm(pathGraph).execute(new Vertex<>(13));
-
-                String pathDistance = (dijkstraAlgorithm.getDistance(new Vertex<>(5)) * PIXEL_PER_METER) + "m";
-                LinkedList<Vertex> path = dijkstraAlgorithm.getPath(new Vertex<>(5));
-
-                for (Vertex vertex : path) {
-                    Node node = nodeArrayList.get((Integer) vertex.getPayload() - 1);
-                    contentBinding.imgMap.addPath((float) node.getPoint().getX(), (float) node.getPoint().getY());
-                    Log.d("다익스트라 알고리즘 테스트", "경로 최단 경로 노드 순서 : " + node);
-                }
-
-                Log.d("다익스트라 알고리즘 테스트", "경로 최단 경로 거리 값 : " + pathDistance);
-
             }//권한습득 성공
 
             @Override
@@ -220,46 +204,25 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setElevation(0f);
 
-        contentBinding.btnFind.setOnClickListener(this);
-        contentBinding.btnSave.setOnClickListener(this);
         contentBinding.imgMap.setOnTouchMapView(this);
-        contentBinding.spinnerStart.setOnItemSelectedListener(this);
-        contentBinding.spinnerEnd.setOnItemSelectedListener(this);
+        contentBinding.btnFind.setOnClickListener(this::onClick);
+        contentBinding.btnPlay.setOnClickListener(this::onClick);
+        contentBinding.btnInit.setOnClickListener(this::onClick);
         activityBinding.navView.setNavigationItemSelectedListener(this);
 
-//        contentBinding.layoutNavigation.removeAllViews();
+//        contentBinding.imgMarker.removeAllViews();
     }
 
-    private void initList() {
-        pointArrayList = new ArrayList<>();
+    private void initPath() {
+        poiArrayList = poiHelper.selectAllPoiList();
+        nodeArrayList = nodeHelper.selectAllNodeList();
+        linkArrayList = linkHelper.selectAllLinkList();
 
-        pointAdapter = new PointAdapter(pointArrayList, new RecyclerViewClickListener() {
-            @Override
-            public void onClick(View view, int position) {
-                Point point = pointArrayList.get(position);
-
-                int[] pixelPoint = contentBinding.imgMap.pointMeterToPixel(new double[]{point.getX(), point.getY()});
-
-                Log.d("ddd", pixelPoint[0] + " - " + pixelPoint[1]);
-
-                contentBinding.imgMap.setPointPosition(pixelPoint[0], pixelPoint[1]);
-
-                //터치 이벤트를 발생시켜 마커 이미지의 매트릭스를 지도에 따라 갱신
-                onTouchMap();
-            }
-        });
-
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
-        linearLayoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        contentBinding.listLocation.setLayoutManager(linearLayoutManager);
-        contentBinding.listLocation.setAdapter(pointAdapter);
-    }
-
-    private void loadMarkerImage() {
-        for (int i = 1; i < 100; i++) { //마커 번호에 대한 이미지 배열 저장
-            markerImage.add(getResources().getIdentifier("tracker" + i, "drawable", getPackageName()));
+        ArrayList<Edge> edgeArrayList = new ArrayList<>();
+        for (Link link : linkArrayList) {
+            edgeArrayList.add(new Edge(new Vertex<>(link.getNode_start()), new Vertex<>(link.getNode_end()), link.getWeight_p()));
         }
-        markerImage.add(getResources().getIdentifier("tracker99_more", "drawable", getPackageName()));
+        pathGraph = new Graph(edgeArrayList);
     }
 
     //지도 이미지 로딩
@@ -275,31 +238,58 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 //        contentBinding.imgMap.initPath();
     }
 
-    private void initSpinner() {
-        ArrayList<String> arrayList = new ArrayList<>();
-
-        for (int i = 0; i < pointArrayList.size(); i++) {
-            arrayList.add((i + 1) + "");
-        }
-
-        ArrayAdapter arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, arrayList);
-
-        contentBinding.spinnerStart.setAdapter(arrayAdapter);
-        contentBinding.spinnerEnd.setAdapter(arrayAdapter);
-    }
-
-    private void updateDistance() {
-        Point startPoint = pointArrayList.get(contentBinding.spinnerStart.getSelectedItemPosition());
-        Point endPoint = pointArrayList.get(contentBinding.spinnerEnd.getSelectedItemPosition());
-
-        contentBinding.txtDistance.setText(String.format("%.4fm", ImageUtils.pointToPointDistance(startPoint.getX(), startPoint.getY(), endPoint.getX(), endPoint.getY())));
-    }
-
     private void setBackgroundPosition() {
         int width = (int) (contentBinding.imgMap.getDrawable().getIntrinsicWidth() / 2f);
         int height = (int) (contentBinding.imgMap.getDrawable().getIntrinsicHeight() / 2f);
 
         contentBinding.imgMap.initPosition(width, height);
+    }
+
+    @SneakyThrows
+    private void searchPath() {
+        DijkstraAlgorithm dijkstraAlgorithm = new DijkstraAlgorithm(pathGraph).execute(new Vertex<>(13));
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(MapActivity.this, android.R.layout.select_dialog_singlechoice);
+
+        for (Poi poi : poiArrayList)
+            adapter.add(poi.getName());
+
+        ListDialog.CreateListDialog(adapter, MapActivity.this, new RecyclerViewClickListener() {
+            @SneakyThrows
+            @Override
+            public void onClick(View view, int position) {
+                contentBinding.btnFind.setVisibility(View.GONE);
+                contentBinding.layoutInfoNavi.setVisibility(View.VISIBLE);
+
+                removeAlMarker();
+                contentBinding.imgMap.initPath();
+
+                pathDistance = (int) (dijkstraAlgorithm.getDistance(new Vertex<>(position + 1)) * PIXEL_PER_METER);
+                path = dijkstraAlgorithm.getPath(new Vertex<>(position + 1));
+
+                contentBinding.txtNaviLen.setText(pathDistance + "m");
+                contentBinding.txtNaviTime.setText((pathDistance / 66 + 1) + "분");
+
+                contentBinding.txtStart.setText("현재 위치");
+                contentBinding.txtEnd.setText(poiArrayList.get(position).getName());
+
+                for (int i = 0; i < path.size(); i++) {
+                    Vertex vertex = path.get(i);
+                    Node node = nodeArrayList.get((Integer) vertex.getPayload() - 1);
+                    contentBinding.imgMap.addPath((float) node.getPoint().getX(), (float) node.getPoint().getY());
+                    Log.d("다익스트라 알고리즘 테스트", "경로 최단 경로 노드 순서 : " + node);
+
+                    int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
+                    int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
+
+                    if (i == 0)
+                        addPoint(parentWidth, parentHeight, (int)  node.getPoint().getX(), (int)  node.getPoint().getY(), R.drawable.ic_departure);
+
+                    if (i == path.size() - 1)
+                        addPoint(parentWidth, parentHeight, (int)  node.getPoint().getX(), (int)  node.getPoint().getY(), R.drawable.ic_destination);
+                }
+            }
+        });
     }
 
     //지정된 좌표 상에 이미지 표출
@@ -320,7 +310,12 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         imgDonut.setScaleType(ImageView.ScaleType.MATRIX);
 
         listPointImage.add(imgDonut);
-        contentBinding.layoutNavigation.addView(imgDonut);
+        contentBinding.imgMarker.addView(imgDonut);
+    }
+
+    private void removeAlMarker() {
+        contentBinding.imgMarker.removeAllViews();
+        listPointImage.clear();
     }
 
     //지도 컨트롤시(이동/확대/축소) 이미지 위치 조정
@@ -336,136 +331,38 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         int resId = v.getId();
 
         switch (resId) {
-            case R.id.btnSave:
-                saveLocationFile();
-                break;
             case R.id.btnFind:
-                Intent intent = new Intent(this, LocationActivity.class);
-                startActivity(intent);
+                searchPath();
+                break;
+
+            case R.id.btnPlay:
+                isPlaying = !isPlaying;
+
+                if (isPlaying) {
+                    contentBinding.seekBar.setMax(path.size());
+                    contentBinding.seekBar.setProgress(0);
+
+                    contentBinding.layoutNavigation.setVisibility(View.VISIBLE);
+                    contentBinding.layoutStop.setVisibility(View.GONE);
+
+                    contentBinding.btnPlay.setImageResource(R.drawable.ic_pause);
+                } else {
+                    contentBinding.layoutNavigation.setVisibility(View.GONE);
+                    contentBinding.layoutStop.setVisibility(View.VISIBLE);
+
+                    contentBinding.btnPlay.setImageResource(R.drawable.ic_start);
+                }
+                break;
+
+            case R.id.btnInit:
+                isPlaying = false;
+
+                contentBinding.btnFind.setVisibility(View.VISIBLE);
+                contentBinding.layoutInfoNavi.setVisibility(View.GONE);
+
+                removeAlMarker();
+                contentBinding.imgMap.initPath();
                 break;
         }
-    }
-
-    @Override
-    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        updateDistance();
-    }
-
-    @Override
-    public void onNothingSelected(AdapterView<?> parent) {
-
-    }
-
-    public void deleteImageView(MoveImageView imageView) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("선택한 마커를 삭제하시겠습니까?");
-
-        builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int id) {
-                int position = listPointImage.indexOf(imageView);
-
-                listPointImage.remove(position);
-                pointArrayList.remove(position);
-                contentBinding.layoutNavigation.removeView(imageView);
-                pointAdapter.refreshPointList(pointArrayList);
-
-                for (int i = position; i < listPointImage.size(); i++) {
-                    MoveImageView moveImageView = listPointImage.get(i);
-                    moveImageView.setImageBitmap(BitmapFactory.decodeResource(getResources(), markerImage.get(i)));
-                }
-
-                //포인트 삭제 시 스피너 갱신
-                initSpinner();
-            }
-        });
-
-        builder.setNegativeButton("취소", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int id) {
-                dialog.dismiss();
-            }
-        });
-        builder.setCancelable(false);
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-
-    public MoveImageView getImageViewPosition(float srcX, float srcY, Matrix matrix, float scale) {
-        float[] dst = new float[2];
-        float[] src = new float[2];
-
-        for (int i = 0; i < listPointImage.size(); i++) {
-            MoveImageView imageView = listPointImage.get(i);
-
-            int[] posLocation = imageView.getPosLocation();
-
-            src[0] = ImageUtils.getDp(this, posLocation[0]);
-            src[1] = ImageUtils.getDp(this, posLocation[1]);
-            matrix.mapPoints(dst, src);
-
-            if (srcX > dst[0] - ImageUtils.getDp(this, 80) && srcX < dst[0] + ImageUtils.getDp(this, 50) && srcY > dst[1] - ImageUtils.getDp(this, 80) && srcY < dst[1]) {
-                //선택한 마커가 보이도록 리스트 이동
-                contentBinding.listLocation.scrollToPosition(i);
-                return imageView;
-            }
-        }
-        return null;
-    }
-
-    public void setImageViewPosition(MoveImageView imageView, float[] pixelPoint, float[] meterPoint) {
-        int position = listPointImage.indexOf(imageView);
-
-        imageView.setPosLocation(pixelPoint);
-        listPointImage.set(position, imageView);
-        pointArrayList.set(position, new Point(meterPoint[0], meterPoint[1]));
-        pointAdapter.refreshPointList(pointArrayList);
-    }
-
-    public void addTouchPoint(float[] point) {
-
-        int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
-        int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
-
-        float scaleX = (parentWidth / 2848f);
-        float scaleY = (parentHeight / 4574f);
-
-        float reverseY = (parentHeight - point[1]) / scaleY;
-
-        point[0] /= scaleX;
-        point[1] /= scaleY;
-
-        addPoint(parentWidth, parentHeight, (int) point[0], (int) point[1], markerImage.get(pointArrayList.size()));
-
-        pointArrayList.add(new Point((point[0] * PIXEL_PER_METER) - LEFT_BLANK_METER, (reverseY * PIXEL_PER_METER) - BOTTOM_BLANK_METER));
-        pointAdapter.refreshPointList(pointArrayList);
-
-        //추가시 리스트 최하단으로 이동
-        contentBinding.listLocation.scrollToPosition(pointAdapter.getItemCount() - 1);
-
-        //포인트 추가 시 스피너 갱신
-        initSpinner();
-    }
-
-    private void saveLocationFile() {
-        String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + File.separator;
-        String fileName = contentBinding.editFileName.getText().toString();
-
-        File fileLocation = new File(filePath, fileName + "_LOCATION.csv");
-
-        if (fileLocation.exists()) {
-            AlarmDialog.showDialog(this, "파일명이 중복되어 스캔할 수 없습니다.\n파일을 삭제하거나 작성 파일명을 수정해주세요.");
-            return;
-        }
-
-        CsvManager csvManager = new CsvManager("/" + fileName + "_LOCATION.csv");
-        csvManager.Write("Number,Location_X(m),Location_Y(m)");
-
-        for (int i = 0; i < pointArrayList.size(); i++) {
-            Point point = pointArrayList.get(i);
-
-            csvManager.Write((i + 1) + "," + point.getX() + "," + point.getY());
-        }
-        Toast.makeText(this, "파일이 저장되었습니다.", Toast.LENGTH_SHORT).show();
     }
 }
