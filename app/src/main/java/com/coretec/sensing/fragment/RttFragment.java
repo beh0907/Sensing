@@ -30,11 +30,18 @@ import com.coretec.sensing.activity.LoggingActivity;
 import com.coretec.sensing.adapter.WifiAdapter;
 import com.coretec.sensing.databinding.FragmentRttBinding;
 import com.coretec.sensing.dialog.LoadingDialog;
+import com.coretec.sensing.model.Ap;
 import com.coretec.sensing.model.Rtt;
+import com.coretec.sensing.sqlite.ApHelper;
+import com.coretec.sensing.utils.Calculation;
 import com.coretec.sensing.utils.CsvManager;
 import com.coretec.sensing.utils.DateUtils;
+import com.coretec.sensing.utils.Sort;
+import com.github.dakusui.combinatoradix.Combinator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,28 +52,38 @@ import java.util.TimerTask;
 public class RttFragment extends Fragment {
     private static TimerTask wifiTimer;
     private static TimerTask rttTimer;
+
     private LoggingActivity loggingActivity;
     private FragmentRttBinding rttBinding;
-    private ArrayList<ScanResult> accessPoints;
-    private HashMap<String, ScanResult> accessPointsSupporting80211mc;
-    private HashMap<String, RangingResult> accessPointsSupporting80211mcInfo;
+
     private WifiManager wifiManager;
     private WifiScanReceiver wifiScanReceiver;
     private WifiRttManager wifiRttManager;
-    private RttRangingResultCallback rttRangingResultCallback;
     private WifiAdapter wifiAdapter;
+
+    private RttRangingResultCallback rttRangingResultCallback;
+
+    private ArrayList<ScanResult> accessPoints;
+    private HashMap<String, ScanResult> accessPointsSupporting80211mc;
+    private HashMap<String, RangingResult> accessPointsSupporting80211mcInfo;
+
     private CsvManager wifiCsvManager;
     private CsvManager rttCsvManager;
+    private CsvManager rttSendCsvManager;
+
     private boolean wifiScanning = false;
     private boolean rttScanning = false;
     private boolean isWifiLogging = false;
     private boolean isRttLogging = false;
+
     private Map<String, Rtt> buffer;
+
     private long wifiScanMillisecondDelay;
     private long rttScanMillisecondDelay;
 
-    ScanResult scanResult1;
-    ScanResult scanResult2;
+
+    private ApHelper apHelper = new ApHelper();
+    private HashMap<String, Ap> apHashMap;
 
     //프래그먼트에 쓸 객체 리시브
     //프래그먼트에 쓸 객체는 bundle로 arguments 저장을 해야 함
@@ -94,6 +111,8 @@ public class RttFragment extends Fragment {
         initRtt();
 
         loggingActivity = ((LoggingActivity) getActivity());
+
+        apHashMap = apHelper.selectAllApList();
         return view;
     }
 
@@ -159,7 +178,6 @@ public class RttFragment extends Fragment {
     }
 
     public void findAccessPoints() {
-        buffer.clear();
         boolean isScan = wifiManager.startScan();
 
         if (isScan) {
@@ -171,13 +189,16 @@ public class RttFragment extends Fragment {
     }
 
     public void createWifiCsvFile(String fileName) {
-        wifiCsvManager = new CsvManager("/" + fileName + "_WIFI.csv");
+        wifiCsvManager = new CsvManager(fileName + "_WIFI.csv");
         wifiCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,centerFreq0,centerFreq1,channelWidth,frequency,level");
     }
 
     public void createRttCsvFile(String fileName) {
-        rttCsvManager = new CsvManager("/" + fileName + "_RTT.csv");
+        rttCsvManager = new CsvManager(fileName + "_RTT.csv");
         rttCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,RttStatus,Distance(Mm),DistanceStdDev(Mm),Rssi,timestamp,NumAttemptedMeasurements,NumSuccessfulMeasurements");
+
+        rttSendCsvManager = new CsvManager(fileName + "_RTT_SEND.csv");
+        rttSendCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),MacAddress");
     }
 
     public void wifiStartScanning(int delay) {
@@ -258,44 +279,80 @@ public class RttFragment extends Fragment {
         if (!getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT))
             return;
 
+        //체크된 RTT지원 항목만 얻음
+        ArrayList<ScanResult> results = wifiAdapter.getWifiAccessPointsWithRtt();
 
+        //RTT 리스트가 1개 이상 있을경우 콜백 이벤트 등록
+        if (results.size() > 0) {
+            //1개씩 9번 로깅
+//            for (int i = 0; i < results.size(); i++) {
+//                ScanResult scanResult = results.get(i);
+//
+//                ArrayList<ScanResult> list = new ArrayList<>();
+//                list.add(scanResult);
+//
+//                rttSendCsvManager.Write(DateUtils.getCurrentDateTime() + "," + loggingActivity.getRuntime() + "," + scanResult.BSSID);
+//
+//                RangingRequest rangingRequest =
+//                        new RangingRequest.Builder().addAccessPoints(list).build();
+//
+//                wifiRttManager.startRanging(rangingRequest, getActivity().getApplication().getMainExecutor(), rttRangingResultCallback);
+//            }
 
-        if (scanResult1 != null && scanResult2 != null) {
-            List<ScanResult> temp = new ArrayList<>();
-            temp.add(scanResult1);
-            temp.add(scanResult2);
+            //3개씩 3번 로깅
+//            String macAddressList = "";
+//            ArrayList<ScanResult> list = new ArrayList<>();
+//
+//            for (int i = 0; i < results.size(); i++) {
+//                ScanResult scanResult = results.get(i);
+//
+//                list.add(scanResult);
+//                macAddressList += scanResult.BSSID + " ";
+//
+//                if (list.size() == 3) {
+//                    rttSendCsvManager.Write(DateUtils.getCurrentDateTime() + "," + loggingActivity.getRuntime() + "," + macAddressList);
+//
+//                    RangingRequest rangingRequest =
+//                            new RangingRequest.Builder().addAccessPoints(list).build();
+//
+//                    wifiRttManager.startRanging(rangingRequest, getActivity().getApplication().getMainExecutor(), rttRangingResultCallback);
+//
+//                    macAddressList = "";
+//                    list = new ArrayList<>();
+//                }
+//            }
 
-            for (int i = 0; i < 5; i++) {
-                scanResult1.BSSID = "0a:55:00:00:50:a0";
-                scanResult2.BSSID = "0a:55:00:00:50:20";
-                RangingRequest rangingRequest = new RangingRequest.Builder().addAccessPoints(temp).build();
-                wifiRttManager.startRanging(rangingRequest, getActivity().getApplication().getMainExecutor(), rttRangingResultCallback);
-            }
-        } else {
-            //체크된 RTT지원 항목만 얻음
-            ArrayList<ScanResult> results = wifiAdapter.getWifiAccessPointsWithRtt();
+            //전체를 한번에 로깅
+            String macAddressList = "";
 
-            //RTT 리스트가 1개 이상 있을경우 콜백 이벤트 등록
-            if (accessPointsSupporting80211mc.size() > 0) {
-                RangingRequest rangingRequest =
-                        new RangingRequest.Builder().addAccessPoints(results).build();
+            for (ScanResult scanResult : results)
+                macAddressList += scanResult.BSSID + " ";
 
-                wifiRttManager.startRanging(rangingRequest, getActivity().getApplication().getMainExecutor(), rttRangingResultCallback);
-            }
+            rttSendCsvManager.Write(DateUtils.getCurrentDateTime() + "," + loggingActivity.getRuntime() + "," + macAddressList);
+
+            RangingRequest rangingRequest =
+                    new RangingRequest.Builder().addAccessPoints(results).build();
+
+            wifiRttManager.startRanging(rangingRequest, getActivity().getApplication().getMainExecutor(), rttRangingResultCallback);
         }
 
 
-//        //체크된 RTT지원 항목만 얻음
-//        ArrayList<ScanResult> results = wifiAdapter.getWifiAccessPointsWithRtt();
+//        if (!ttt) {
+//            ttt = true;
+//            List<String[]> all = new ArrayList<>();
 //
-//        //RTT 리스트가 1개 이상 있을경우 콜백 이벤트 등록
-//        if (accessPointsSupporting80211mc.size() > 0) {
-//            RangingRequest rangingRequest =
-//                    new RangingRequest.Builder().addAccessPoints(results).build();
-//
-//            wifiRttManager.startRanging(rangingRequest, getActivity().getApplication().getMainExecutor(), rttRangingResultCallback);
+//            for (int i = 0; i < 900; i++) {
+//                for (int j = 0; j < 900; j++) {
+//                    if (i != j)
+//                        all.add(new String[]{i + "," + j});
+//                }
+//            }
+//            rttCsvManager.WriteAll(all);
 //        }
     }
+
+
+//    boolean ttt = false;
 
 
     private void findAccessPoints(@NonNull List<ScanResult> originalList) {
@@ -315,18 +372,12 @@ public class RttFragment extends Fragment {
             }
 
             if (scanResult.is80211mcResponder()) {
-                if (scanResult.BSSID.equals("0a:55:00:00:50:a0"))
-                    scanResult1 = scanResult;
-                else
-                    scanResult2 = scanResult;
-
                 accessPointsSupporting80211mc.put(scanResult.BSSID, scanResult);
             }
         }
     }
 
     private void recordCsvBuffer() {
-
         ArrayList<ScanResult> tempList = new ArrayList<>();
 
         tempList.addAll(accessPointsSupporting80211mc.values());
@@ -337,6 +388,8 @@ public class RttFragment extends Fragment {
         long runTime = loggingActivity.getRuntime();
         int ptNum = loggingActivity.getPtNum();
         int Status = loggingActivity.getStatus();
+
+        buffer.clear();
 
         for (int i = 0; i < tempList.size(); i++) {
             ScanResult scanResult = tempList.get(i);
@@ -364,7 +417,7 @@ public class RttFragment extends Fragment {
             writeData += "," + scanResult.level;
 
 //            wifiArrayListData.add(writeData);
-            if (wifiCsvManager != null)
+            if (isWifiLogging && wifiCsvManager != null)
                 wifiCsvManager.Write(writeData);
         }
     }
@@ -401,8 +454,7 @@ public class RttFragment extends Fragment {
                 //RTT를 지원하는 WIFI 객체 리스트 저장
                 find80211mcSupportedAccessPoints(newList);
 
-                if (isWifiLogging && wifiCsvManager != null)
-                    recordCsvBuffer();
+                recordCsvBuffer();
 
                 wifiAdapter.swapData(accessPoints, accessPointsSupporting80211mc, accessPointsSupporting80211mcInfo);
                 LoadingDialog.hideDialog();
@@ -417,7 +469,7 @@ public class RttFragment extends Fragment {
 
         @Override
         public void onRangingResults(@NonNull List<RangingResult> list) {
-            Log.d("와이파이 RTT 데이터 테스트 태그", list.toString());
+//            Log.d("와이파이 RTT 데이터 테스트 태그", list.toString());
             if (!rttScanning)
                 return;
 
@@ -427,14 +479,17 @@ public class RttFragment extends Fragment {
             int ptNum = loggingActivity.getPtNum();
             int Status = loggingActivity.getStatus();
 
-            for (int i = 0; i < list.size(); i++) {
+            String myLocationLog = dateTime + "," + runTime + ",";
 
-                if (isRttLogging && rttCsvManager != null) {
+            for (int i = 0; i < list.size(); i++) {
+                if (isRttLogging) {
                     RangingResult rangingResult = list.get(i);
 
+                    String key = rangingResult.getMacAddress().toString();
+                    Rtt rtt = buffer.get(key);
+
                     if (rangingResult.getStatus() == RangingResult.STATUS_SUCCESS) {
-                        String key = rangingResult.getMacAddress().toString();
-                        Rtt rtt = buffer.get(key);
+
                         if (rtt != null) {
                             String data = dateTime;
                             data += "," + runTime;
@@ -450,7 +505,29 @@ public class RttFragment extends Fragment {
                             data += "," + rangingResult.getNumAttemptedMeasurements();
                             data += "," + rangingResult.getNumSuccessfulMeasurements();
 
-                            rttCsvManager.Write(data);
+                            if (rttCsvManager != null)
+                                rttCsvManager.Write(data);
+                        }
+
+                        Ap ap = apHashMap.get(rangingResult.getMacAddress().toString());
+                        String name = ap.getName();
+                        double pointX = ap.getPoint().getX();
+                        double pointY = ap.getPoint().getY();
+                        double distance = rangingResult.getDistanceMm() / 1000f;
+
+                        myLocationLog += name + "," + pointX + "," + pointY + "," + distance + ",";
+                    } else {
+                        if (rtt != null) {
+                            String data = dateTime;
+                            data += "," + runTime;
+                            data += "," + ptNum;
+                            data += "," + Status;
+                            data += "," + rtt.getSsid();
+                            data += "," + rtt.getBssid();
+                            data += "," + rangingResult.getStatus();
+
+                            if (rttCsvManager != null)
+                                rttCsvManager.Write(data);
                         }
                     }
 
@@ -458,9 +535,33 @@ public class RttFragment extends Fragment {
                 }
             }
 
-            Log.d("와이파이 RTT 데이터 테스트 태그", accessPointsSupporting80211mcInfo.toString());
-
+//            Log.d("와이파이 RTT 데이터 테스트 태그", accessPointsSupporting80211mcInfo.toString());
             wifiAdapter.swapData(accessPoints, accessPointsSupporting80211mc, accessPointsSupporting80211mcInfo);
+
+//            double[][] myLocation = Calculation.getMyLocation(accessPointsSupporting80211mcInfo, apHashMap);
+//
+//            if (myLocation != null) {
+//                myLocationLog += myLocation[0][0] + "," + myLocation[1][0];
+//
+////                Log.d("RTT 실내위치 측위", "RTT 스캔 데이터 : " + accessPointsSupporting80211mcInfo.toString());
+////                Log.d("RTT 실내위치 측위", "AP 정보 : " + apHashMap.toString());
+////                Log.d("RTT 실내위치 측위", "내 위치 : (" + myLocation[0][0] + "m," + myLocation[1][0] + "m)");
+//                Log.d("RTT 실내위치 측위", myLocationLog);
+//            }
+            ArrayList<Double> locationXList = new ArrayList<>();
+            ArrayList<Double> locationYList = new ArrayList<>();
+            Sort.Ascending ascending = new Sort.Ascending();
+
+            for (List<RangingResult> each : new Combinator<>(list, 4)) {
+                double[][] myLocation = Calculation.getMyLocation(each, apHashMap);
+                locationXList.add(myLocation[0][0]);
+                locationYList.add(myLocation[1][0]);
+            }
+            Collections.sort(locationXList, ascending);
+            Collections.sort(locationYList, ascending);
+
+            myLocationLog += locationXList.get(locationXList.size() / 2) + "," + locationXList.get(locationYList.size() / 2);
+            Log.d("RTT 실내위치 측위", myLocationLog);
         }
     }
 }

@@ -1,21 +1,20 @@
 package com.coretec.sensing.sqlite;
 
-import android.content.ContentValues;
-import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import com.coretec.sensing.model.Ap;
 import com.coretec.sensing.model.Poi;
 import com.coretec.sensing.model.Point;
 import com.coretec.sensing.utils.FilePath;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class PoiHelper {
     private static final String TABLE_POI = "poi";
 
     private static final String KEY_SEQ = "seq";
-    private static final String KEY_DATA = "type";
     private static final String KEY_NAME = "name";
     private static final String KEY_MAP_X = "point_x";
     private static final String KEY_MAP_Y = "point_y";
@@ -37,11 +36,10 @@ public class PoiHelper {
             do {
                 int seq = cursor.getInt(cursor.getColumnIndex(KEY_SEQ));
                 String name = cursor.getString(cursor.getColumnIndex(KEY_NAME));
-                String type = cursor.getString(cursor.getColumnIndex(KEY_DATA));
                 int mapX = cursor.getInt(cursor.getColumnIndex(KEY_MAP_X));
                 int mapY = cursor.getInt(cursor.getColumnIndex(KEY_MAP_Y));
 
-                Poi poi = new Poi(seq, name, type, new Point(mapX, mapY));
+                Poi poi = new Poi(seq, name, new Point(mapX, mapY));
 
                 poiArrayList.add(poi);
             } while (cursor.moveToNext());

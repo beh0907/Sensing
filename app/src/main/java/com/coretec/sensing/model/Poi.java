@@ -10,6 +10,5 @@ import lombok.NoArgsConstructor;
 public class Poi {
     private int seq;
     private String name;
-    private String type;
     private Point point;
 }

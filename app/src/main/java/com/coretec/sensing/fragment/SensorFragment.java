@@ -73,7 +73,7 @@ public class SensorFragment extends Fragment {
     }
 
     public void createCsvFile(String fileName) {
-        csvManager = new CsvManager("/" + fileName + "_Sensor.csv");
+        csvManager = new CsvManager( fileName + "_Sensor.csv");
         csvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,acceleration X,acceleration Y,acceleration Z,Geomagnetic X,Geomagnetic Y,Geomagnetic Z,gyro X,gyro Y,gyro Z,Pressure(hPa),Altitude(m),Temperature,Humidity,GPSLatitude,GPSLongitude,GPSAltitude");
     }
 

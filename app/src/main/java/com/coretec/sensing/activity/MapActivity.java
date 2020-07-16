@@ -1,26 +1,19 @@
 package com.coretec.sensing.activity;
 
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.Spinner;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -28,33 +21,29 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.bumptech.glide.Glide;
 import com.coretec.sensing.R;
-import com.coretec.sensing.adapter.PointAdapter;
 import com.coretec.sensing.databinding.ActivityMapBinding;
 import com.coretec.sensing.databinding.ContentMapBinding;
-import com.coretec.sensing.dialog.AlarmDialog;
 import com.coretec.sensing.dialog.ListDialog;
 import com.coretec.sensing.listener.OnTouchMapListener;
 import com.coretec.sensing.listener.RecyclerViewClickListener;
+import com.coretec.sensing.model.Ap;
 import com.coretec.sensing.model.Link;
 import com.coretec.sensing.model.Node;
 import com.coretec.sensing.model.Poi;
-import com.coretec.sensing.model.Point;
+import com.coretec.sensing.sqlite.ApHelper;
 import com.coretec.sensing.sqlite.LinkHelper;
 import com.coretec.sensing.sqlite.NodeHelper;
 import com.coretec.sensing.sqlite.PoiHelper;
-import com.coretec.sensing.utils.CsvManager;
-import com.coretec.sensing.utils.ImageUtils;
+import com.coretec.sensing.utils.Calculation;
 import com.coretec.sensing.view.MoveImageView;
 import com.google.android.material.navigation.NavigationView;
 import com.gun0912.tedpermission.PermissionListener;
 import com.gun0912.tedpermission.TedPermission;
 
-import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -69,8 +58,6 @@ import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.Manifest.permission.BLUETOOTH;
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
-import static com.coretec.sensing.utils.Const.BOTTOM_BLANK_METER;
-import static com.coretec.sensing.utils.Const.LEFT_BLANK_METER;
 import static com.coretec.sensing.utils.Const.PIXEL_PER_METER;
 
 public class MapActivity extends AppCompatActivity implements OnTouchMapListener, NavigationView.OnNavigationItemSelectedListener, View.OnClickListener {
@@ -80,10 +67,12 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     private ArrayList<MoveImageView> listPointImage = new ArrayList<>();
 
     private PoiHelper poiHelper = new PoiHelper();
+    private ApHelper apHelper = new ApHelper();
     private NodeHelper nodeHelper = new NodeHelper();
     private LinkHelper linkHelper = new LinkHelper();
 
     private ArrayList<Poi> poiArrayList;
+    private HashMap<String, Ap> apHashMap;
     private ArrayList<Node> nodeArrayList;
     private ArrayList<Link> linkArrayList;
     private LinkedList<Vertex> path;
@@ -215,6 +204,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
     private void initPath() {
         poiArrayList = poiHelper.selectAllPoiList();
+        apHashMap = apHelper.selectAllApList();
         nodeArrayList = nodeHelper.selectAllNodeList();
         linkArrayList = linkHelper.selectAllLinkList();
 

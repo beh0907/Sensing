@@ -75,9 +75,9 @@ public class LteFragment extends Fragment {
 
     public void createCsvFile(String fileName) {
         //LTE
-        csvCellIdentityLteManager = new CsvManager("/" + fileName + "_CellIdentityLte.csv");
+        csvCellIdentityLteManager = new CsvManager( fileName + "_CellIdentityLte.csv");
         csvCellIdentityLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,BandWidth,Ci,Earfcn,Mcc,Mnc,NetworkOperator,Pci,Tac");
-        csvCellSignalStrengthLteManager = new CsvManager("/" + fileName + "_CellSignalStrengthLte.csv");
+        csvCellSignalStrengthLteManager = new CsvManager( fileName + "_CellSignalStrengthLte.csv");
 
         if (android.os.Build.VERSION.SDK_INT >= 29) {
             csvCellSignalStrengthLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssi,Rssnr,TimingAdvance");

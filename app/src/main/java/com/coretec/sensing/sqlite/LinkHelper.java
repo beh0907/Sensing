@@ -1,12 +1,10 @@
 package com.coretec.sensing.sqlite;
 
-import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import com.coretec.sensing.model.Link;
 import com.coretec.sensing.model.Poi;
-import com.coretec.sensing.model.Point;
 import com.coretec.sensing.utils.FilePath;
 
 import java.util.ArrayList;

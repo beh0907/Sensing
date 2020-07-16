@@ -74,7 +74,7 @@ public class WifiAdapter extends RecyclerView.Adapter<WifiAdapter.ViewHolder> {
 
             for (RangingResult rangingResult : wifiAccessPointsWithRttInfo.values()) {
                 //rangingResult.getStatus()가 0 일경우 정상 통신이며 1이 들어올 경우 통신 실패로 인해 값이 null이 나와 에러 발생
-                if (currentScanResult.BSSID.equals(rangingResult.getMacAddress().toString()) && rangingResult.getStatus() == 0) {
+                if (currentScanResult.BSSID.equals(rangingResult.getMacAddress().toString()) && rangingResult.getStatus() == RangingResult.STATUS_SUCCESS) {
                     viewHolder.txtRtt.setText((rangingResult.getDistanceMm() / 1000f) + "m");
                     viewHolder.txtRssi.setText(rangingResult.getRssi() + "");
                     isInfo = true;

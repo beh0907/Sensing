@@ -201,7 +201,7 @@ public class BluetoothFragment extends Fragment {
     }
 
     public void createCsvFile(String fileName) {
-        csvManager = new CsvManager("/" + fileName + "_Bluetooth.csv");
+        csvManager = new CsvManager( fileName + "_Bluetooth.csv");
         csvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,RSSI");
     }
 
