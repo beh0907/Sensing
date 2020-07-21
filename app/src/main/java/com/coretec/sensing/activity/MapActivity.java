@@ -1,9 +1,20 @@
 package com.coretec.sensing.activity;
 
+import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
+import android.net.wifi.rtt.RangingRequest;
+import android.net.wifi.rtt.RangingResult;
+import android.net.wifi.rtt.RangingResultCallback;
+import android.net.wifi.rtt.WifiRttManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -11,11 +22,11 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
@@ -25,27 +36,35 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import com.coretec.sensing.R;
 import com.coretec.sensing.databinding.ActivityMapBinding;
 import com.coretec.sensing.databinding.ContentMapBinding;
-import com.coretec.sensing.dialog.ListDialog;
+import com.coretec.sensing.dialog.LoadingDialog;
 import com.coretec.sensing.listener.OnTouchMapListener;
-import com.coretec.sensing.listener.RecyclerViewClickListener;
 import com.coretec.sensing.model.Ap;
 import com.coretec.sensing.model.Link;
 import com.coretec.sensing.model.Node;
 import com.coretec.sensing.model.Poi;
+import com.coretec.sensing.model.Point;
 import com.coretec.sensing.sqlite.ApHelper;
+import com.coretec.sensing.sqlite.DBDownload;
 import com.coretec.sensing.sqlite.LinkHelper;
 import com.coretec.sensing.sqlite.NodeHelper;
 import com.coretec.sensing.sqlite.PoiHelper;
 import com.coretec.sensing.utils.Calculation;
+import com.coretec.sensing.utils.PrefManager;
+import com.coretec.sensing.utils.Sort;
 import com.coretec.sensing.view.MoveImageView;
+import com.github.dakusui.combinatoradix.Combinator;
 import com.google.android.material.navigation.NavigationView;
 import com.gun0912.tedpermission.PermissionListener;
 import com.gun0912.tedpermission.TedPermission;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import lombok.SneakyThrows;
 import no.wtw.android.dijkstra.DijkstraAlgorithm;
@@ -55,6 +74,7 @@ import no.wtw.android.dijkstra.model.Vertex;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
+import static android.Manifest.permission.ACCESS_WIFI_STATE;
 import static android.Manifest.permission.BLUETOOTH;
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
@@ -81,6 +101,24 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
     private int pathDistance;
     private boolean isPlaying = false;
+
+    private Point myLocation;
+
+
+    private static TimerTask wifiTimer;
+    private static TimerTask rttTimer;
+
+    private WifiManager wifiManager;
+    private WifiScanReceiver wifiScanReceiver;
+    private WifiRttManager wifiRttManager;
+
+    private RttRangingResultCallback rttRangingResultCallback;
+
+    private ArrayList<ScanResult> accessPoints;
+    private HashMap<String, ScanResult> accessPointsSupporting80211mc;
+    private HashMap<String, RangingResult> accessPointsSupporting80211mcInfo;
+
+    private boolean startScan = false;
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -128,9 +166,30 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             activityBinding.drawerLayout.closeDrawer(activityBinding.navView);
             return;
         }
-        ;
-        ;
         finish();
+    }
+
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        if (wifiScanReceiver != null)
+            registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if (wifiScanReceiver != null)
+            unregisterReceiver(wifiScanReceiver);
+    }
+
+    private void downloadDB() {
+        PrefManager pref = new PrefManager(this);
+        if (!pref.isDownloadDB())
+            DBDownload.copyDB(pref, this);
     }
 
     @Override
@@ -140,10 +199,16 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             @SneakyThrows
             @Override
             public void onPermissionGranted() {
+                downloadDB();
                 init();
+                initRtt();
                 initPath();
                 loadMapImage();
                 setBackgroundPosition();
+
+
+                LoadingDialog.showDialog(MapActivity.this, "AP를 스캔 중입니다... (" + accessPointsSupporting80211mc.size() + "/10)");
+                scanWifi();
             }//권한습득 성공
 
             @Override
@@ -156,7 +221,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 .setPermissionListener(permissionlistener)
                 .setRationaleMessage("앱을 사용하기 위해 권한설정이 필요합니다.")
                 .setDeniedMessage("앱 사용을 위해 권한을 설정해주세요.\n[설정] > [권한] 에서 권한을 허용할 수 있습니다.")
-                .setPermissions(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, BLUETOOTH)
+                .setPermissions(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, BLUETOOTH, ACCESS_WIFI_STATE)
                 .check();//권한습득
     }
 
@@ -202,6 +267,22 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 //        contentBinding.imgMarker.removeAllViews();
     }
 
+    private void initRtt() {
+        accessPoints = new ArrayList<>();
+        accessPointsSupporting80211mc = new HashMap<>();
+        accessPointsSupporting80211mcInfo = new HashMap<>();
+
+        wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        wifiScanReceiver = new WifiScanReceiver();
+
+        wifiRttManager = (WifiRttManager) getApplicationContext().getSystemService(Context.WIFI_RTT_RANGING_SERVICE);
+
+        rttRangingResultCallback = new RttRangingResultCallback();
+
+        if (!wifiManager.isWifiEnabled())
+            wifiManager.setWifiEnabled(true);
+    }
+
     private void initPath() {
         poiArrayList = poiHelper.selectAllPoiList();
         apHashMap = apHelper.selectAllApList();
@@ -211,6 +292,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         ArrayList<Edge> edgeArrayList = new ArrayList<>();
         for (Link link : linkArrayList) {
             edgeArrayList.add(new Edge(new Vertex<>(link.getNode_start()), new Vertex<>(link.getNode_end()), link.getWeight_p()));
+
+            //양방향을 위해 역방향 추가
+            edgeArrayList.add(new Edge(new Vertex<>(link.getNode_end()), new Vertex<>(link.getNode_start()), link.getWeight_p()));
         }
         pathGraph = new Graph(edgeArrayList);
     }
@@ -236,50 +320,39 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     @SneakyThrows
-    private void searchPath() {
-        DijkstraAlgorithm dijkstraAlgorithm = new DijkstraAlgorithm(pathGraph).execute(new Vertex<>(13));
+    private void searchPath(Poi poiStart, Poi poiEnd) {
+        DijkstraAlgorithm dijkstraAlgorithm = new DijkstraAlgorithm(pathGraph).execute(new Vertex<>(poiStart.getSeq()));
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(MapActivity.this, android.R.layout.select_dialog_singlechoice);
+        contentBinding.btnFind.setVisibility(View.GONE);
+        contentBinding.layoutInfoNavi.setVisibility(View.VISIBLE);
 
-        for (Poi poi : poiArrayList)
-            adapter.add(poi.getName());
+        removeAlMarker();
+        contentBinding.imgMap.initPath();
 
-        ListDialog.CreateListDialog(adapter, MapActivity.this, new RecyclerViewClickListener() {
-            @SneakyThrows
-            @Override
-            public void onClick(View view, int position) {
-                contentBinding.btnFind.setVisibility(View.GONE);
-                contentBinding.layoutInfoNavi.setVisibility(View.VISIBLE);
+        pathDistance = (int) (dijkstraAlgorithm.getDistance(new Vertex<>(poiEnd.getSeq())) * PIXEL_PER_METER);
+        path = dijkstraAlgorithm.getPath(new Vertex<>(poiEnd.getSeq()));
 
-                removeAlMarker();
-                contentBinding.imgMap.initPath();
+        contentBinding.txtNaviLen.setText(pathDistance + "m");
+        contentBinding.txtNaviTime.setText((pathDistance / 66 + 1) + "분");
 
-                pathDistance = (int) (dijkstraAlgorithm.getDistance(new Vertex<>(position + 1)) * PIXEL_PER_METER);
-                path = dijkstraAlgorithm.getPath(new Vertex<>(position + 1));
+        contentBinding.txtStart.setText("현재 위치");
+        contentBinding.txtEnd.setText(poiArrayList.get(poiEnd.getSeq() - 1).getName());
 
-                contentBinding.txtNaviLen.setText(pathDistance + "m");
-                contentBinding.txtNaviTime.setText((pathDistance / 66 + 1) + "분");
+        for (int i = 0; i < path.size(); i++) {
+            Vertex vertex = path.get(i);
+            Node node = nodeArrayList.get((Integer) vertex.getPayload() - 1);
+            contentBinding.imgMap.addPath((float) node.getPoint().getX(), (float) node.getPoint().getY());
+            Log.d("다익스트라 알고리즘 테스트", "경로 최단 경로 노드 순서 : " + node);
 
-                contentBinding.txtStart.setText("현재 위치");
-                contentBinding.txtEnd.setText(poiArrayList.get(position).getName());
+            int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
+            int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
 
-                for (int i = 0; i < path.size(); i++) {
-                    Vertex vertex = path.get(i);
-                    Node node = nodeArrayList.get((Integer) vertex.getPayload() - 1);
-                    contentBinding.imgMap.addPath((float) node.getPoint().getX(), (float) node.getPoint().getY());
-                    Log.d("다익스트라 알고리즘 테스트", "경로 최단 경로 노드 순서 : " + node);
+            if (i == 0)
+                addPoint(parentWidth, parentHeight, (int) node.getPoint().getX(), (int) node.getPoint().getY(), R.drawable.ic_departure);
 
-                    int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
-                    int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
-
-                    if (i == 0)
-                        addPoint(parentWidth, parentHeight, (int)  node.getPoint().getX(), (int)  node.getPoint().getY(), R.drawable.ic_departure);
-
-                    if (i == path.size() - 1)
-                        addPoint(parentWidth, parentHeight, (int)  node.getPoint().getX(), (int)  node.getPoint().getY(), R.drawable.ic_destination);
-                }
-            }
-        });
+            if (i == path.size() - 1)
+                addPoint(parentWidth, parentHeight, (int) node.getPoint().getX(), (int) node.getPoint().getY(), R.drawable.ic_destination);
+        }
     }
 
     //지정된 좌표 상에 이미지 표출
@@ -322,7 +395,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
         switch (resId) {
             case R.id.btnFind:
-                searchPath();
+                Intent intent = new Intent(MapActivity.this, LocationActivity.class);
+                startActivityForResult(intent, 0);
+//                searchPath();
                 break;
 
             case R.id.btnPlay:
@@ -351,8 +426,238 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 contentBinding.layoutInfoNavi.setVisibility(View.GONE);
 
                 removeAlMarker();
+                setBackgroundPosition();
                 contentBinding.imgMap.initPath();
                 break;
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (resultCode != RESULT_OK) {
+            return;
+        }
+
+        if (requestCode == 0) {
+            Poi poiStart = (Poi) data.getSerializableExtra("poiStart");
+            Poi poiEnd = (Poi) data.getSerializableExtra("poiEnd");
+
+            Log.d("시작 POI", poiStart.toString());
+            Log.d("도착 POI", poiEnd.toString());
+
+            searchPath(poiStart, poiEnd);
+        }
+    }
+
+
+    public void wifiStartScanning() {
+        wifiStopScanning();
+        wifiScanDelayRequest();
+    }
+
+    public void rttStartScanning() {
+        rttStopScanning();
+        rttScanDelayRequest();
+    }
+
+    public void wifiStopScanning() {
+        if (wifiTimer != null) {
+            wifiTimer.cancel();
+            wifiTimer = null;
+        }
+    }
+
+    public void rttStopScanning() {
+        if (rttTimer != null) {
+            rttTimer.cancel();
+            rttTimer = null;
+        }
+    }
+
+
+    //2분 4회의 wifi 스캔 제한이 있기 떄문에
+    //30초에 한번식 강제적으로 스캔 시도
+    private void wifiScanDelayRequest() {
+        wifiTimer = new TimerTask() {
+            public void run() {
+                runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
+                    @SuppressLint("DefaultLocale")
+                    public void run() {
+                        scanWifi();
+//                            wifiScanDelayRequest();
+                    }
+                });
+            }
+        };
+
+        // 0초후 첫실행, 설정된 Delay마다 실행
+        Timer timer = new Timer();
+        timer.schedule(wifiTimer, 0, 5000);
+    }
+
+    private void rttScanDelayRequest() {
+        rttTimer = new TimerTask() {
+            public void run() {
+                runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
+                    @SuppressLint("DefaultLocale")
+                    public void run() {
+                        startRangingRequest();
+                    }
+                });
+            }
+        };
+
+        // 0초후 첫실행, 설정된 Delay마다 실행
+        Timer timer = new Timer();
+        timer.schedule(rttTimer, 0, 1000);
+    }
+
+    private void startRangingRequest() {
+//        if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT))
+//            return;
+
+        //체크된 RTT지원 항목만 얻음
+        ArrayList<ScanResult> results = new ArrayList<>(accessPointsSupporting80211mc.values());
+
+        //RTT 리스트가 1개 이상 있을경우 콜백 이벤트 등록
+        if (results.size() > 0) {
+            RangingRequest rangingRequest =
+                    new RangingRequest.Builder().addAccessPoints(results).build();
+
+            wifiRttManager.startRanging(rangingRequest, getApplication().getMainExecutor(), rttRangingResultCallback);
+        }
+    }
+
+
+    public void scanWifi() {
+        wifiManager.startScan();
+
+//        if (isScan) {
+//            Toast.makeText(getApplicationContext(), "와이파이를 조회하고 있습니다.", Toast.LENGTH_SHORT).show();
+//        } else {
+//            Toast.makeText(getApplicationContext(), "스캔 한도가 초과하여 스캔에 실패했습니다.", Toast.LENGTH_SHORT).show();
+//        }
+    }
+
+    private void findAccessPoints(@NonNull List<ScanResult> originalList) {
+        accessPoints.clear();
+
+        for (ScanResult scanResult : originalList) {
+            if (!scanResult.is80211mcResponder()) {
+                accessPoints.add(scanResult);
+            }
+        }
+    }
+
+    private void find80211mcSupportedAccessPoints(@NonNull List<ScanResult> originalList) {
+        for (ScanResult scanResult : originalList) {
+
+            if (!scanResult.is80211mcResponder())
+                continue;
+
+            if (myLocation == null && accessPointsSupporting80211mc.size() >= RangingRequest.getMaxPeers())
+                return;
+
+            accessPointsSupporting80211mc.put(scanResult.BSSID, scanResult);
+        }
+
+        //RTT 통신의 한계 AP인 10개가 넘어갈 경우 실제 좌표상의 실제 거리와 비교함
+        //내림차순으로 10위가 넘어가는 AP는 삭제
+        if (accessPointsSupporting80211mc.size() > RangingRequest.getMaxPeers()) {
+
+            HashMap<String, Double> distanceList = new HashMap<>();
+
+            for (ScanResult scanResult : accessPointsSupporting80211mc.values()) {
+                Ap ap = apHashMap.get(scanResult.BSSID);
+
+                distanceList.put(ap.getMacAddress(), Calculation.getDistance(myLocation, ap.getPoint()));
+            }
+
+            // 내림차순
+            ArrayList<String> keySetList = new ArrayList<String>(distanceList.keySet());
+            Collections.sort(keySetList, (o1, o2) -> (distanceList.get(o2).compareTo(distanceList.get(o1))));
+
+            //내림차순 후
+            for (int i = accessPointsSupporting80211mc.size() - 1; i >= RangingRequest.getMaxPeers(); i--) {
+                accessPointsSupporting80211mc.remove(keySetList.get(i));
+            }
+        }
+    }
+
+    private class WifiScanReceiver extends BroadcastReceiver {
+        // This is checked via mLocationPermissionApproved boolean
+        @SuppressLint("MissingPermission")
+        public void onReceive(Context context, Intent intent) {
+
+            List<ScanResult> scanResults = wifiManager.getScanResults();
+
+            Log.d("와이파이 데이터 테스트 태그", scanResults.toString());
+
+            //RTT를 지원하지 않는 WIFI 객체 리스트 저장
+            findAccessPoints(scanResults);
+
+            //RTT를 지원하는 WIFI 객체 리스트 저장
+            find80211mcSupportedAccessPoints(scanResults);
+
+            if (accessPointsSupporting80211mc.size() < 10) {
+                LoadingDialog.updateMessage("AP를 스캔 중입니다... (" + accessPointsSupporting80211mc.size() + "/10)");
+                scanWifi();
+            } else {
+                rttStartScanning();
+                wifiStartScanning();
+
+                LoadingDialog.hideDialog();
+            }
+
+//            wifiAdapter.swapData(accessPoints, accessPointsSupporting80211mc, accessPointsSupporting80211mcInfo);
+        }
+    }
+
+    private class RttRangingResultCallback extends RangingResultCallback {
+        @Override
+        public void onRangingFailure(int code) {
+        }
+
+        @Override
+        public void onRangingResults(@NonNull List<RangingResult> list) {
+//            Log.d("와이파이 RTT 데이터 테스트 태그", list.toString());
+
+            for (RangingResult rangingResult : list) {
+                if (rangingResult.getStatus() == RangingResult.STATUS_SUCCESS) {
+                    accessPointsSupporting80211mcInfo.put(rangingResult.getMacAddress().toString(), rangingResult);
+                }
+            }
+
+            Log.d("RTT 데이터 테스트 태그", accessPointsSupporting80211mcInfo.toString());
+//            wifiAdapter.swapData(accessPoints, accessPointsSupporting80211mc, accessPointsSupporting80211mcInfo);
+
+            getMyLocation(list);
+        }
+
+        private void getMyLocation(List<RangingResult> list) {
+            ArrayList<Double> locationXList = new ArrayList<>();
+            ArrayList<Double> locationYList = new ArrayList<>();
+            Sort.Ascending ascending = new Sort.Ascending();
+
+            int count = 0;
+
+            for (List<RangingResult> each : new Combinator<>(list, 4)) {
+                double[][] myLocation = Calculation.getMyLocation(each, apHashMap);
+
+                if (myLocation != null) {
+                    count++;
+                    locationXList.add(myLocation[0][0]);
+                    locationYList.add(myLocation[1][0]);
+                }
+            }
+            Collections.sort(locationXList, ascending);
+            Collections.sort(locationYList, ascending);
+
+            myLocation = new Point(locationXList.get(locationXList.size() / 2), locationYList.get(locationYList.size() / 2));
+
+            Log.d("RTT 실내위치 측위", myLocation.toString());
         }
     }
 }

@@ -260,4 +260,8 @@ public class Calculation {
     private static Ap getTargetAp(HashMap<String, Ap> apArrayList, String macAddress) {
         return apArrayList.get(macAddress);
     }
+
+    public static double getDistance(Point myLocation, Point ap) {
+        return Math.sqrt(Math.pow(Math.abs(myLocation.getX() - ap.getX()), 2) + Math.pow(Math.abs(myLocation.getY() - ap.getY()), 2));
+    }
 }

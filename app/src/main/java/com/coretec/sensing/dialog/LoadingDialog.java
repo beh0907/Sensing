@@ -20,11 +20,20 @@ public class LoadingDialog {
         progressDialog.show();
     }
 
+    public static void updateMessage(String message) {
+        if (progressDialog == null)
+            return;
+
+        progressDialog.setMessage(message);
+    }
+
     public static void hideDialog() {
         if (progressDialog == null)
             return;
 
-        if (progressDialog.isShowing())
+        if (progressDialog.isShowing()) {
             progressDialog.dismiss();
+            progressDialog = null;
+        }
     }
 }

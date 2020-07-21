@@ -59,9 +59,9 @@ public class PoiAdapter extends RecyclerView.Adapter<PoiAdapter.ViewHolder> {
     public void onBindViewHolder(ViewHolder viewHolder, int position) {
         Poi poi = poiArrayList.get(position);
 
-        viewHolder.txtSeq.setText((position + 1) + "");
-        viewHolder.txtX.setText(String.format("%.4f m", poi.getPoint().getX()));
-        viewHolder.txtY.setText(String.format("%.4f m", poi.getPoint().getY()));
+        viewHolder.txtName.setText(poi.getName());
+//        viewHolder.txtX.setText(String.format("%.4f m", poi.getPoint().getX()));
+//        viewHolder.txtY.setText(String.format("%.4f m", poi.getPoint().getY()));
     }
 
     @Override
@@ -77,15 +77,11 @@ public class PoiAdapter extends RecyclerView.Adapter<PoiAdapter.ViewHolder> {
 
     class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
-        TextView txtSeq;
-        TextView txtX;
-        TextView txtY;
+        TextView txtName;
 
         ViewHolder(View view) {
             super(view);
-            txtSeq = view.findViewById(R.id.txtSeq);
-            txtX = view.findViewById(R.id.txtX);
-            txtY = view.findViewById(R.id.txtY);
+            txtName = view.findViewById(R.id.txtName);
 
             view.setOnClickListener(this);
         }

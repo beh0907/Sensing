@@ -177,17 +177,6 @@ public class RttFragment extends Fragment {
         isRttLogging = rttLogging;
     }
 
-    public void findAccessPoints() {
-        boolean isScan = wifiManager.startScan();
-
-        if (isScan) {
-            if (!isRttLogging)
-                Toast.makeText(getContext(), "와이파이를 조회하고 있습니다.", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(getContext(), "스캔 한도가 초과하여 스캔에 실패했습니다.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
     public void createWifiCsvFile(String fileName) {
         wifiCsvManager = new CsvManager(fileName + "_WIFI.csv");
         wifiCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,centerFreq0,centerFreq1,channelWidth,frequency,level");
@@ -335,25 +324,20 @@ public class RttFragment extends Fragment {
 
             wifiRttManager.startRanging(rangingRequest, getActivity().getApplication().getMainExecutor(), rttRangingResultCallback);
         }
-
-
-//        if (!ttt) {
-//            ttt = true;
-//            List<String[]> all = new ArrayList<>();
-//
-//            for (int i = 0; i < 900; i++) {
-//                for (int j = 0; j < 900; j++) {
-//                    if (i != j)
-//                        all.add(new String[]{i + "," + j});
-//                }
-//            }
-//            rttCsvManager.WriteAll(all);
 //        }
     }
 
 
-//    boolean ttt = false;
+    public void findAccessPoints() {
+        boolean isScan = wifiManager.startScan();
 
+        if (isScan) {
+            if (!isRttLogging)
+                Toast.makeText(getContext(), "와이파이를 조회하고 있습니다.", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(getContext(), "스캔 한도가 초과하여 스캔에 실패했습니다.", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     private void findAccessPoints(@NonNull List<ScanResult> originalList) {
         accessPoints.clear();

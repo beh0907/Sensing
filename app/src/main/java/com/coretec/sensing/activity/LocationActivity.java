@@ -1,5 +1,6 @@
 package com.coretec.sensing.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -16,7 +17,10 @@ import com.coretec.sensing.adapter.PoiAdapter;
 import com.coretec.sensing.databinding.ActivityLocationBinding;
 import com.coretec.sensing.databinding.ContentLocationBinding;
 import com.coretec.sensing.listener.RecyclerViewClickListener;
+import com.coretec.sensing.model.Node;
 import com.coretec.sensing.model.Poi;
+import com.coretec.sensing.sqlite.NodeHelper;
+import com.coretec.sensing.sqlite.PoiHelper;
 
 import java.util.ArrayList;
 
@@ -26,6 +30,8 @@ public class LocationActivity extends AppCompatActivity implements View.OnClickL
 
     private PoiAdapter poiAdapter;
     private ArrayList<Poi> poiArrayList;
+
+    private PoiHelper poiHelper = new PoiHelper();
 
     private Poi poiStart;
     private Poi poiEnd;
@@ -74,13 +80,16 @@ public class LocationActivity extends AppCompatActivity implements View.OnClickL
         contentBinding.inputStart.setSelected(true);
         contentBinding.inputEnd.setSelected(true);
 
+        contentBinding.inputStart.requestFocus();
+
         TypedValue outValue = new TypedValue();
         getApplicationContext().getTheme().resolveAttribute(
                 android.R.attr.selectableItemBackground, outValue, true);
+
     }
 
     private void initList() {
-        poiArrayList = new ArrayList<>();
+        poiArrayList = poiHelper.selectAllPoiList();
 
         poiAdapter = new PoiAdapter(poiArrayList, new RecyclerViewClickListener() {
             @Override
@@ -108,6 +117,22 @@ public class LocationActivity extends AppCompatActivity implements View.OnClickL
 
     @Override
     public void onClick(View v) {
+        int resId = v.getId();
 
+        switch (resId) {
+            case R.id.btnFind:
+                sendPoi();
+                break;
+        }
+    }
+
+    private void sendPoi() {
+        Intent intent = new Intent();
+
+        intent.putExtra("poiStart", poiStart);
+        intent.putExtra("poiEnd", poiEnd);
+
+        setResult(RESULT_OK, intent);
+        finish();
     }
 }

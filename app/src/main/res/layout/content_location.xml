@@ -13,6 +13,7 @@
         android:id="@+id/layoutHome"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="?attr/actionBarSize"
         android:orientation="vertical">
 
         <LinearLayout
@@ -57,7 +58,9 @@
                         android:hint="클릭 후 위치를 선택하세요 !"
                         android:paddingLeft="5dp"
                         android:paddingRight="5dp"
-                        android:singleLine="true" />
+                        android:singleLine="true"
+                        android:textColor="@color/white"
+                        android:textColorHint="@color/white" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -88,7 +91,9 @@
                         android:hint="클릭 후 위치를 선택하세요 !"
                         android:paddingLeft="5dp"
                         android:paddingRight="5dp"
-                        android:singleLine="true" />
+                        android:singleLine="true"
+                        android:textColor="@color/white"
+                        android:textColorHint="@color/white" />
                 </LinearLayout>
 
             </LinearLayout>
