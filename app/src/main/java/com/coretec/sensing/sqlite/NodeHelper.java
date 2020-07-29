@@ -25,7 +25,7 @@ public class NodeHelper {
 
     public ArrayList<Node> selectAllNodeList() {
         ArrayList<Node> nodeArrayList = new ArrayList<>();
-        String query = "SELECT * FROM " + TABLE_NODE;
+        String query = "SELECT * FROM " + TABLE_NODE + " ORDER by " + KEY_SEQ + " asc";
 
         Cursor cursor = database.rawQuery(query, null);
 

@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -49,6 +48,8 @@ import com.coretec.sensing.sqlite.LinkHelper;
 import com.coretec.sensing.sqlite.NodeHelper;
 import com.coretec.sensing.sqlite.PoiHelper;
 import com.coretec.sensing.utils.Calculation;
+import com.coretec.sensing.utils.CsvManager;
+import com.coretec.sensing.utils.DateUtils;
 import com.coretec.sensing.utils.PrefManager;
 import com.coretec.sensing.utils.Sort;
 import com.coretec.sensing.view.MoveImageView;
@@ -62,7 +63,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -72,12 +72,17 @@ import no.wtw.android.dijkstra.model.Edge;
 import no.wtw.android.dijkstra.model.Graph;
 import no.wtw.android.dijkstra.model.Vertex;
 
+import static android.Manifest.permission.ACCESS_BACKGROUND_LOCATION;
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.Manifest.permission.ACCESS_WIFI_STATE;
 import static android.Manifest.permission.BLUETOOTH;
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static com.coretec.sensing.utils.Const.BOTTOM_BLANK_PIXEL;
+import static com.coretec.sensing.utils.Const.LEFT_BLANK_PIXEL;
+import static com.coretec.sensing.utils.Const.MAP_HEIGHT;
+import static com.coretec.sensing.utils.Const.METER_PER_PIXEL;
 import static com.coretec.sensing.utils.Const.PIXEL_PER_METER;
 
 public class MapActivity extends AppCompatActivity implements OnTouchMapListener, NavigationView.OnNavigationItemSelectedListener, View.OnClickListener {
@@ -86,10 +91,13 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     private ContentMapBinding contentBinding;
     private ArrayList<MoveImageView> listPointImage = new ArrayList<>();
 
-    private PoiHelper poiHelper = new PoiHelper();
-    private ApHelper apHelper = new ApHelper();
-    private NodeHelper nodeHelper = new NodeHelper();
-    private LinkHelper linkHelper = new LinkHelper();
+    private MoveImageView myLocationView;
+    private MoveImageView myLocationView2;
+
+    private PoiHelper poiHelper;
+    private ApHelper apHelper;
+    private NodeHelper nodeHelper;
+    private LinkHelper linkHelper;
 
     private ArrayList<Poi> poiArrayList;
     private HashMap<String, Ap> apHashMap;
@@ -103,6 +111,10 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     private boolean isPlaying = false;
 
     private Point myLocation;
+    private Point myLocation2;
+    private Point nearLocation;
+
+    private CsvManager locationCsvManager;
 
 
     private static TimerTask wifiTimer;
@@ -188,8 +200,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
     private void downloadDB() {
         PrefManager pref = new PrefManager(this);
-        if (!pref.isDownloadDB())
-            DBDownload.copyDB(pref, this);
+//        if (!pref.isDownloadDB())
+        DBDownload.copyDB(pref, this);
     }
 
     @Override
@@ -200,12 +212,15 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             @Override
             public void onPermissionGranted() {
                 downloadDB();
+
                 init();
                 initRtt();
                 initPath();
                 loadMapImage();
                 setBackgroundPosition();
 
+
+                createLocationCsvFile(DateUtils.getCurrentCsvFileName());
 
                 LoadingDialog.showDialog(MapActivity.this, "AP를 스캔 중입니다... (" + accessPointsSupporting80211mc.size() + "/10)");
                 scanWifi();
@@ -221,7 +236,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 .setPermissionListener(permissionlistener)
                 .setRationaleMessage("앱을 사용하기 위해 권한설정이 필요합니다.")
                 .setDeniedMessage("앱 사용을 위해 권한을 설정해주세요.\n[설정] > [권한] 에서 권한을 허용할 수 있습니다.")
-                .setPermissions(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, BLUETOOTH, ACCESS_WIFI_STATE)
+                .setPermissions(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, BLUETOOTH, ACCESS_WIFI_STATE, ACCESS_BACKGROUND_LOCATION)
                 .check();//권한습득
     }
 
@@ -265,6 +280,11 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         activityBinding.navView.setNavigationItemSelectedListener(this);
 
 //        contentBinding.imgMarker.removeAllViews();
+
+        poiHelper = new PoiHelper();
+        apHelper = new ApHelper();
+        nodeHelper = new NodeHelper();
+        linkHelper = new LinkHelper();
     }
 
     private void initRtt() {
@@ -289,6 +309,10 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         nodeArrayList = nodeHelper.selectAllNodeList();
         linkArrayList = linkHelper.selectAllLinkList();
 
+        pathGraph = new Graph(initDijkstra());
+    }
+
+    private ArrayList<Edge> initDijkstra() {
         ArrayList<Edge> edgeArrayList = new ArrayList<>();
         for (Link link : linkArrayList) {
             edgeArrayList.add(new Edge(new Vertex<>(link.getNode_start()), new Vertex<>(link.getNode_end()), link.getWeight_p()));
@@ -296,7 +320,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             //양방향을 위해 역방향 추가
             edgeArrayList.add(new Edge(new Vertex<>(link.getNode_end()), new Vertex<>(link.getNode_start()), link.getWeight_p()));
         }
-        pathGraph = new Graph(edgeArrayList);
+
+        return edgeArrayList;
     }
 
     //지도 이미지 로딩
@@ -307,7 +332,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 //        options.inDither = false;
         options.inPreferredConfig = Bitmap.Config.RGB_565;
 
-        Bitmap result = BitmapFactory.decodeResource(resource, R.drawable.bg_map2, options);
+        Bitmap result = BitmapFactory.decodeResource(resource, R.drawable.bg_map, options);
         contentBinding.imgMap.setImageBitmap(result);
 //        contentBinding.imgMap.initPath();
     }
@@ -338,14 +363,13 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         contentBinding.txtStart.setText("현재 위치");
         contentBinding.txtEnd.setText(poiArrayList.get(poiEnd.getSeq() - 1).getName());
 
+        int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
+        int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
+
         for (int i = 0; i < path.size(); i++) {
             Vertex vertex = path.get(i);
             Node node = nodeArrayList.get((Integer) vertex.getPayload() - 1);
             contentBinding.imgMap.addPath((float) node.getPoint().getX(), (float) node.getPoint().getY());
-            Log.d("다익스트라 알고리즘 테스트", "경로 최단 경로 노드 순서 : " + node);
-
-            int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
-            int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
 
             if (i == 0)
                 addPoint(parentWidth, parentHeight, (int) node.getPoint().getX(), (int) node.getPoint().getY(), R.drawable.ic_departure);
@@ -357,9 +381,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
     //지정된 좌표 상에 이미지 표출
     private void addPoint(int parentWidth, int parentHeight, int posX, int posY, int resId) {
-        //경로 추가
-//        contentBinding.imgMap.addPath(posX, posY);
-
         if (resId == 0)
             return;
 
@@ -376,6 +397,48 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         contentBinding.imgMarker.addView(imgDonut);
     }
 
+    //지정된 좌표 상에 이미지 표출
+    private void setMyLocationView(Point point) {
+        int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
+        int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
+
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_my_location);
+
+        if (myLocationView != null)
+            contentBinding.imgMarker.removeView(myLocationView);
+
+        myLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * METER_PER_PIXEL + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * METER_PER_PIXEL) - BOTTOM_BLANK_PIXEL), MapActivity.this);
+
+        myLocationView.setImageBitmap(bitmap);
+        myLocationView.setLayoutParams(layoutParams);
+        myLocationView.setScaleType(ImageView.ScaleType.MATRIX);
+
+        contentBinding.imgMarker.addView(myLocationView);
+    }
+
+    //지정된 좌표 상에 이미지 표출
+    private void setMyLocationView2(Point point) {
+        int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
+        int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
+
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_my_location2);
+
+        if (myLocationView2 != null)
+            contentBinding.imgMarker.removeView(myLocationView2);
+
+        myLocationView2 = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * METER_PER_PIXEL + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * METER_PER_PIXEL) - BOTTOM_BLANK_PIXEL), MapActivity.this);
+
+        myLocationView2.setImageBitmap(bitmap);
+        myLocationView2.setLayoutParams(layoutParams);
+        myLocationView2.setScaleType(ImageView.ScaleType.MATRIX);
+
+        contentBinding.imgMarker.addView(myLocationView2);
+    }
+
     private void removeAlMarker() {
         contentBinding.imgMarker.removeAllViews();
         listPointImage.clear();
@@ -387,6 +450,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         for (MoveImageView imageView : listPointImage) {
             imageView.initPosition();
         }
+        myLocationView.initPosition();
+        myLocationView2.initPosition();
     }
 
     @Override
@@ -449,6 +514,12 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
             searchPath(poiStart, poiEnd);
         }
+    }
+
+
+    public void createLocationCsvFile(String fileName) {
+        locationCsvManager = new CsvManager(fileName + ".csv");
+        locationCsvManager.Write("DATE,TIME,SEC,point(X),point(Y)");
     }
 
 
@@ -593,7 +664,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
             List<ScanResult> scanResults = wifiManager.getScanResults();
 
-            Log.d("와이파이 데이터 테스트 태그", scanResults.toString());
+//            Log.d("와이파이 데이터 테스트 태그", scanResults.toString());
 
             //RTT를 지원하지 않는 WIFI 객체 리스트 저장
             findAccessPoints(scanResults);
@@ -630,7 +701,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 }
             }
 
-            Log.d("RTT 데이터 테스트 태그", accessPointsSupporting80211mcInfo.toString());
+//            Log.d("RTT 데이터 테스트 태그", accessPointsSupporting80211mcInfo.toString());
 //            wifiAdapter.swapData(accessPoints, accessPointsSupporting80211mc, accessPointsSupporting80211mcInfo);
 
             getMyLocation(list);
@@ -641,13 +712,11 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             ArrayList<Double> locationYList = new ArrayList<>();
             Sort.Ascending ascending = new Sort.Ascending();
 
-            int count = 0;
 
             for (List<RangingResult> each : new Combinator<>(list, 4)) {
                 double[][] myLocation = Calculation.getMyLocation(each, apHashMap);
 
                 if (myLocation != null) {
-                    count++;
                     locationXList.add(myLocation[0][0]);
                     locationYList.add(myLocation[1][0]);
                 }
@@ -655,9 +724,79 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             Collections.sort(locationXList, ascending);
             Collections.sort(locationYList, ascending);
 
-            myLocation = new Point(locationXList.get(locationXList.size() / 2), locationYList.get(locationYList.size() / 2));
+            if (locationXList.size() == 0 || locationYList.size() == 0) {
+                return;
+            }
+
+            myLocation = new Point(Math.abs(locationXList.get(locationXList.size() / 2)), Math.abs(locationYList.get(locationYList.size() / 2)));
+
+//            locationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + myLocation.getX() + "," + myLocation.getY());
+
+            setMyLocationView(myLocation);
+            getNearestLink(nodeArrayList, linkArrayList, myLocation);
 
             Log.d("RTT 실내위치 측위", myLocation.toString());
+            Log.d("RTT 실내위치 측위 보정", myLocation2.toString());
+        }
+
+        //a,b의 포인트 좌표를 픽셀에서 M단위로 수정해야함
+        private Link getNearestLink(ArrayList<Node> nodeArrayList, ArrayList<Link> linkArrayList, Point point) {
+            double distance = Double.MAX_VALUE;
+            Link nearestLink = null;
+
+            for (Link link : linkArrayList) {
+                Point start = nodeArrayList.get(link.getNode_start() - 1).getPoint();
+                Point end = nodeArrayList.get(link.getNode_end() - 1).getPoint();
+
+                double x1 = (start.getX() - LEFT_BLANK_PIXEL) * PIXEL_PER_METER;
+                double y1 = (MAP_HEIGHT - start.getY() - BOTTOM_BLANK_PIXEL) * PIXEL_PER_METER;
+                double x2 = (end.getX() - LEFT_BLANK_PIXEL) * PIXEL_PER_METER;
+                double y2 = (MAP_HEIGHT - end.getY() - BOTTOM_BLANK_PIXEL) * PIXEL_PER_METER;
+                double px = point.getX();
+                double py = point.getY();
+
+                double temp = getDist2LineSegment(px, py, x1, y1, x2, y2);
+
+                //거리가 짧은 링크의 정보를 담아 갱신
+                if (distance > temp) {
+                    distance = temp;
+                    nearestLink = link;
+                    myLocation2 = nearLocation;
+                }
+            }
+
+            Log.d("가장 가까운 링크", nearestLink.toString());
+            Log.d("가장 가까운 링크 거리", distance + "m");
+
+            setMyLocationView2(myLocation2);
+
+            return nearestLink;
+        }
+
+        private double getDist2LineSegment(double px, double py, double x1, double y1, double x2, double y2) {
+            double xDelta = x2 - x1;
+            double yDelta = y2 - y1;
+
+            if ((xDelta == 0) && (yDelta == 0)) {
+                throw new IllegalArgumentException("Segment start equals segment end");
+            }
+
+            double u = ((px - x1) * xDelta + (py - y1) * yDelta) / (xDelta * xDelta + yDelta * yDelta);
+
+            if (u < 0) {
+                nearLocation = new Point(x1, y1);
+            } else if (u > 1) {
+                nearLocation = new Point(x2, y2);
+            } else {
+                nearLocation = new Point(x1 + u * xDelta, y1 + u * yDelta);
+            }
+
+            return getPoint2PointDistance(nearLocation, new Point(px, py));
+        }
+
+        private double getPoint2PointDistance(Point p1, Point p2) {
+            return Math.sqrt((p1.getX() - p2.getX()) * (p1.getX() - p2.getX())
+                    + (p1.getY() - p2.getY()) * (p1.getY() - p2.getY()));
         }
     }
 }

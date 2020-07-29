@@ -26,7 +26,7 @@ public class LinkHelper {
 
     public ArrayList<Link> selectAllLinkList() {
         ArrayList<Link> linkArrayList = new ArrayList<>();
-        String query = "SELECT * FROM " + TABLE_LINK;
+        String query = "SELECT * FROM " + TABLE_LINK + " ORDER by " + KEY_SEQ + " asc";
 
         Cursor cursor = database.rawQuery(query, null);
 

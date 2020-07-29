@@ -26,7 +26,7 @@ public class ApHelper {
 
     public HashMap<String, Ap> selectAllApList() {
         HashMap<String, Ap> apHashMap = new HashMap<>();
-        String query = "SELECT * FROM " + TABLE_AP;
+        String query = "SELECT * FROM " + TABLE_AP + " ORDER by " + KEY_SEQ + " asc";
 
         Cursor cursor = database.rawQuery(query, null);
 

@@ -12,6 +12,9 @@ import androidx.appcompat.widget.AppCompatImageView;
 
 import com.coretec.sensing.utils.Const;
 
+import static com.coretec.sensing.utils.Const.MAP_HEIGHT;
+import static com.coretec.sensing.utils.Const.MAP_WIDTH;
+
 
 public class MoveImageView extends AppCompatImageView implements View.OnTouchListener {
     private Matrix matrix = new Matrix();
@@ -95,8 +98,8 @@ public class MoveImageView extends AppCompatImageView implements View.OnTouchLis
         // 초기 확대 배율
         value[0] = value[4] = 1f;
 
-        float scaleX = parentValue[0] * (parentWidth / 2848f);
-        float scaleY = parentValue[4] * (parentHeight / 4574f);
+        float scaleX = parentValue[0] * (parentWidth / MAP_WIDTH);
+        float scaleY = parentValue[4] * (parentHeight / MAP_HEIGHT);
 
 //        Log.d("Scale", "X : " + scaleX + ", Y : " + scaleY);
 

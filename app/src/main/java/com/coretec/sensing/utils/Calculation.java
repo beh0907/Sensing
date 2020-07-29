@@ -35,21 +35,6 @@ public class Calculation {
     }
 
     public static double[][] getMyLocation(List<RangingResult> scanResultArrayList, HashMap<String, Ap> apArrayList) {
-//        initializeData(scanResultArrayList, apArrayList);
-
-//        Matrix matrixA = new Matrix(a);
-//        Matrix matrixB = new Matrix(b);
-//        Matrix matrixAT = matrixA.transpose();
-//
-//        Matrix data1 = matrixAT.times(matrixA);
-//        Matrix data2 = data1.inverse();
-//        Matrix data3 = data2.times(matrixAT);
-//        Matrix data4 = data3.times(matrixB);
-//        Matrix data5 = data4.times(0.5f);
-//
-//        return data5.getArray();
-
-//        initializeData();
         if (initializeData(scanResultArrayList, apArrayList) == 0)
             return null;
 

@@ -27,7 +27,7 @@ public class PoiHelper {
 
     public ArrayList<Poi> selectAllPoiList() {
         ArrayList<Poi> poiArrayList = new ArrayList<>();
-        String query = "SELECT * FROM " + TABLE_POI;
+        String query = "SELECT * FROM " + TABLE_POI + " ORDER by " + KEY_SEQ + " asc";
 
         Cursor cursor = database.rawQuery(query, null);
 

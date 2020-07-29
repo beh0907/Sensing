@@ -29,6 +29,8 @@ import static com.coretec.sensing.utils.Const.BOTTOM_BLANK_METER;
 import static com.coretec.sensing.utils.Const.BOTTOM_BLANK_PIXEL;
 import static com.coretec.sensing.utils.Const.LEFT_BLANK_METER;
 import static com.coretec.sensing.utils.Const.LEFT_BLANK_PIXEL;
+import static com.coretec.sensing.utils.Const.MAP_HEIGHT;
+import static com.coretec.sensing.utils.Const.MAP_WIDTH;
 import static com.coretec.sensing.utils.Const.METER_PER_PIXEL;
 import static com.coretec.sensing.utils.Const.PIXEL_PER_METER;
 
@@ -130,8 +132,8 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
     }
 
     public void addPath(float input_x, float input_y) {
-        float scaleX = (getDrawable().getIntrinsicWidth() / 2848f);
-        float scaleY = (getDrawable().getIntrinsicHeight() / 4574f);
+        float scaleX = (getDrawable().getIntrinsicWidth() / MAP_WIDTH);
+        float scaleY = (getDrawable().getIntrinsicHeight() / MAP_HEIGHT);
 
         input_x *= scaleX;
         input_y *= scaleY;
@@ -149,8 +151,8 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
         int parentWidth = getDrawable().getIntrinsicWidth();
         int parentHeight = getDrawable().getIntrinsicHeight();
 
-        float scaleX = (parentWidth / 2848f);
-        float scaleY = (parentHeight / 4574f);
+        float scaleX = (parentWidth / MAP_WIDTH);
+        float scaleY = (parentHeight / MAP_HEIGHT);
 
         float reverseY = (parentHeight - point[1]) / scaleY;
 
@@ -164,8 +166,8 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
         int parentWidth = getDrawable().getIntrinsicWidth();
         int parentHeight = getDrawable().getIntrinsicHeight();
 
-        float scaleX = (parentWidth / 2848f);
-        float scaleY = (parentHeight / 4574f);
+        float scaleX = (parentWidth / MAP_WIDTH);
+        float scaleY = (parentHeight / MAP_HEIGHT);
 
         point[0] = (point[0] * METER_PER_PIXEL) + LEFT_BLANK_PIXEL;
         point[1] = (point[1] * METER_PER_PIXEL) + BOTTOM_BLANK_PIXEL;
@@ -179,7 +181,7 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
         return new int[]{(int) point[0], (int) point[1]};
     }
 
-    private float[] getTouchPixel(float srcX, float srcY, Matrix matrix) {
+    private float[] pointTouchToPixel(float srcX, float srcY, Matrix matrix) {
         //터치 좌표
         float[] touchLocation = new float[]{srcX, srcY};
 
@@ -308,8 +310,8 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
 
         value[0] = value[4] = 1f;
 
-        float scaleX = getDrawable().getIntrinsicWidth() / 2848f;
-        float scaleY = getDrawable().getIntrinsicHeight() / 4574f;
+        float scaleX = getDrawable().getIntrinsicWidth() / MAP_WIDTH;
+        float scaleY = getDrawable().getIntrinsicHeight() / MAP_HEIGHT;
 
         Log.d("줌 상태", value[0] + "");
 

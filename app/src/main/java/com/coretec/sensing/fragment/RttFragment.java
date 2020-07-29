@@ -527,9 +527,9 @@ public class RttFragment extends Fragment {
 //            if (myLocation != null) {
 //                myLocationLog += myLocation[0][0] + "," + myLocation[1][0];
 //
-////                Log.d("RTT 실내위치 측위", "RTT 스캔 데이터 : " + accessPointsSupporting80211mcInfo.toString());
-////                Log.d("RTT 실내위치 측위", "AP 정보 : " + apHashMap.toString());
-////                Log.d("RTT 실내위치 측위", "내 위치 : (" + myLocation[0][0] + "m," + myLocation[1][0] + "m)");
+//                Log.d("RTT 실내위치 측위", "RTT 스캔 데이터 : " + accessPointsSupporting80211mcInfo.toString());
+//                Log.d("RTT 실내위치 측위", "AP 정보 : " + apHashMap.toString());
+//                Log.d("RTT 실내위치 측위", "내 위치 : (" + myLocation[0][0] + "m," + myLocation[1][0] + "m)");
 //                Log.d("RTT 실내위치 측위", myLocationLog);
 //            }
             ArrayList<Double> locationXList = new ArrayList<>();
