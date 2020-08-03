@@ -1,20 +1,13 @@
 package com.coretec.sensing.utils;
 
 import android.net.wifi.rtt.RangingResult;
-import android.util.Log;
 
 import com.coretec.sensing.model.Ap;
 import com.coretec.sensing.model.Point;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import Jama.Matrix;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 public class Calculation {
     static double[][] a;
@@ -246,7 +239,7 @@ public class Calculation {
         return apArrayList.get(macAddress);
     }
 
-    public static double getDistance(Point myLocation, Point ap) {
+    public static double getPoint2PointDistance(Point myLocation, Point ap) {
         return Math.sqrt(Math.pow(Math.abs(myLocation.getX() - ap.getX()), 2) + Math.pow(Math.abs(myLocation.getY() - ap.getY()), 2));
     }
 }

@@ -643,7 +643,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             for (ScanResult scanResult : accessPointsSupporting80211mc.values()) {
                 Ap ap = apHashMap.get(scanResult.BSSID);
 
-                distanceList.put(ap.getMacAddress(), Calculation.getDistance(myLocation, ap.getPoint()));
+                distanceList.put(ap.getMacAddress(), Calculation.getPoint2PointDistance(myLocation, ap.getPoint()));
             }
 
             // 내림차순
@@ -721,22 +721,71 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                     locationYList.add(myLocation[1][0]);
                 }
             }
-            Collections.sort(locationXList, ascending);
-            Collections.sort(locationYList, ascending);
 
             if (locationXList.size() == 0 || locationYList.size() == 0) {
                 return;
             }
+            //====================================================================================================================================================
+            //기존 그룹군의 중위값으로 위치 측위
+//            Collections.sort(locationXList, ascending);
+//            Collections.sort(locationYList, ascending);
+//
+//            myLocation = new Point(locationXList.get(locationXList.size() / 2), locationYList.get(locationYList.size() / 2));
+            //====================================================================================================================================================
 
-            myLocation = new Point(Math.abs(locationXList.get(locationXList.size() / 2)), Math.abs(locationYList.get(locationYList.size() / 2)));
+            //====================================================================================================================================================
+            //기존 그룹군 데이터를 기반으로 DBSCAN 알고리즘 반영
+            ArrayList<Double> dbScanXList = new ArrayList<>();
+            ArrayList<Double> dbScanYList = new ArrayList<>();
 
-//            locationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + myLocation.getX() + "," + myLocation.getY());
+            int maxCount = 0;
+
+            for (int i = 0; i < locationXList.size(); i++) {
+                ArrayList<Double> tempXList = new ArrayList<>();
+                ArrayList<Double> tempYList = new ArrayList<>();
+
+                Point criteriaPoint = new Point(locationXList.get(i), locationYList.get(i));
+
+                tempXList.add(criteriaPoint.getX());
+                tempYList.add(criteriaPoint.getY());
+
+                int count = 1;
+
+                for (int j = 0; j < locationXList.size(); j++) {
+                    if (i == j)
+                        continue;
+
+                    Point point = new Point(locationXList.get(j), locationYList.get(j));
+
+                    double distance = Calculation.getPoint2PointDistance(criteriaPoint, point);
+
+                    //0.5미터 이내로 근접한 포인트 저장
+                    if (0.5f > distance) {
+                        tempXList.add(point.getX());
+                        tempYList.add(point.getY());
+                        ++count;
+                    }
+                }
+
+                if (count > maxCount) {
+                    dbScanXList = tempXList;
+                    dbScanYList = tempYList;
+                    maxCount = count;
+                }
+            }
+
+            Collections.sort(locationXList, ascending);
+            Collections.sort(locationYList, ascending);
+            myLocation = new Point(dbScanXList.get(dbScanXList.size() / 2), dbScanYList.get(locationYList.size() / 2));
+            //====================================================================================================================================================
 
             setMyLocationView(myLocation);
             getNearestLink(nodeArrayList, linkArrayList, myLocation);
 
             Log.d("RTT 실내위치 측위", myLocation.toString());
             Log.d("RTT 실내위치 측위 보정", myLocation2.toString());
+
+            locationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + myLocation.getX() + "," + myLocation.getY() + "," + myLocation2.getX() + "," + myLocation2.getY());
         }
 
         //a,b의 포인트 좌표를 픽셀에서 M단위로 수정해야함

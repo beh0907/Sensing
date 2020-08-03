@@ -1,22 +1,13 @@
 package com.coretec.sensing.utils;
 
 import android.os.Environment;
-import android.util.Log;
 
-import com.coretec.sensing.model.Bluetooth;
-import com.coretec.sensing.model.SensorData;
 import com.opencsv.CSVWriter;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
-
-import lombok.SneakyThrows;
 
 public class CsvManager {
     private String delimiter = ",";
@@ -71,7 +62,6 @@ public class CsvManager {
 
             for (String data : data_list) {
                 writer.writeNext(data.split(","));
-                writer.close();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -94,7 +84,6 @@ public class CsvManager {
             }
 
             writer.writeAll(all);
-            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
