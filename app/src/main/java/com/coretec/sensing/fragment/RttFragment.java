@@ -40,7 +40,6 @@ import com.coretec.sensing.utils.Sort;
 import com.github.dakusui.combinatoradix.Combinator;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -273,43 +272,6 @@ public class RttFragment extends Fragment {
 
         //RTT 리스트가 1개 이상 있을경우 콜백 이벤트 등록
         if (results.size() > 0) {
-            //1개씩 9번 로깅
-//            for (int i = 0; i < results.size(); i++) {
-//                ScanResult scanResult = results.get(i);
-//
-//                ArrayList<ScanResult> list = new ArrayList<>();
-//                list.add(scanResult);
-//
-//                rttSendCsvManager.Write(DateUtils.getCurrentDateTime() + "," + loggingActivity.getRuntime() + "," + scanResult.BSSID);
-//
-//                RangingRequest rangingRequest =
-//                        new RangingRequest.Builder().addAccessPoints(list).build();
-//
-//                wifiRttManager.startRanging(rangingRequest, getActivity().getApplication().getMainExecutor(), rttRangingResultCallback);
-//            }
-
-            //3개씩 3번 로깅
-//            String macAddressList = "";
-//            ArrayList<ScanResult> list = new ArrayList<>();
-//
-//            for (int i = 0; i < results.size(); i++) {
-//                ScanResult scanResult = results.get(i);
-//
-//                list.add(scanResult);
-//                macAddressList += scanResult.BSSID + " ";
-//
-//                if (list.size() == 3) {
-//                    rttSendCsvManager.Write(DateUtils.getCurrentDateTime() + "," + loggingActivity.getRuntime() + "," + macAddressList);
-//
-//                    RangingRequest rangingRequest =
-//                            new RangingRequest.Builder().addAccessPoints(list).build();
-//
-//                    wifiRttManager.startRanging(rangingRequest, getActivity().getApplication().getMainExecutor(), rttRangingResultCallback);
-//
-//                    macAddressList = "";
-//                    list = new ArrayList<>();
-//                }
-//            }
 
             //전체를 한번에 로깅
             String macAddressList = "";

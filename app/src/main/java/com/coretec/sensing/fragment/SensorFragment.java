@@ -1,9 +1,7 @@
 package com.coretec.sensing.fragment;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.os.Bundle;
-import android.telephony.TelephonyManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,8 +34,6 @@ public class SensorFragment extends Fragment {
 
     private boolean isLogging = false;
 
-    private TelephonyManager telephonyManager;
-
     //프래그먼트에 쓸 객체 리시브
     //프래그먼트에 쓸 객체는 bundle로 arguments 저장을 해야 함
     public static SensorFragment newInstance() {
@@ -62,8 +58,6 @@ public class SensorFragment extends Fragment {
 
         loggingActivity = ((LoggingActivity) getActivity());
         sensor = new Sensor(getContext());
-
-        telephonyManager = (TelephonyManager) getContext().getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
         return view;
     }
 
@@ -81,10 +75,10 @@ public class SensorFragment extends Fragment {
         isLogging = logging;
     }
 
-    public void startSensor(int delay) {
+    public void sensorStartScanning(int delay) {
         gpsTracker = new GpsTracker(getContext(), delay);
 
-        stopSensor();
+        sensorStopScanning();
 
         //센서 객체 초기화
         sensor.start();
@@ -148,19 +142,10 @@ public class SensorFragment extends Fragment {
         timer.schedule(sensorTimer, 0, delay);
     }
 
-    public void stopSensor() {
+    public void sensorStopScanning() {
         if (sensor.isStart()) {
             gpsTracker.stop();
             sensor.stop();
-            sensorTimer.cancel();
-            sensorTimer = null;
-        }
-    }
-
-    public void endSensor() {
-        if (sensor.isStart()) {
-            gpsTracker.stop();
-            sensor.end();
             sensorTimer.cancel();
             sensorTimer = null;
         }

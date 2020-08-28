@@ -91,8 +91,8 @@ public class LteFragment extends Fragment {
         isLogging = logging;
     }
 
-    public void startScanning(int delay) {
-        stopScanning();
+    public void lteStartScanning(int delay) {
+        lteStopScanning();
 
         lteTimer = new TimerTask() {
             @SuppressLint("MissingPermission")
@@ -146,14 +146,7 @@ public class LteFragment extends Fragment {
         timer.schedule(lteTimer, 0, delay);
     }
 
-    public void stopScanning() {
-        if (lteTimer != null) {
-            lteTimer.cancel();
-            lteTimer = null;
-        }
-    }
-
-    public void endScanning() {
+    public void lteStopScanning() {
         if (lteTimer != null) {
             lteTimer.cancel();
             lteTimer = null;

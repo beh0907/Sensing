@@ -47,12 +47,11 @@ public class BluetoothFragment extends Fragment {
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothLeScanner bluetoothLeScanner;
+    private ScanCallback leScanCallback;
 
     private String[] bluetoothFilterBssid;
 
     private boolean isLogging = false;
-
-    private ScanCallback leScanCallback;
 
     private CsvManager csvManager;
 

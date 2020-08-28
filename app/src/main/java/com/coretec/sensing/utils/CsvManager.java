@@ -70,7 +70,6 @@ public class CsvManager {
 
     public void WriteAll(List<String[]> all) {
         try {
-
             String filePath = baseDir + this.fileName;
 
             File file = new File(filePath);
@@ -84,6 +83,18 @@ public class CsvManager {
             }
 
             writer.writeAll(all);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void close() {
+        try {
+//            if (mFileWriter != null)
+//                mFileWriter.close();
+
+            if (writer != null)
+                writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

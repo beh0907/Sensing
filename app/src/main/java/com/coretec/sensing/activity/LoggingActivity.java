@@ -280,8 +280,8 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
 //        rttFragment.rttStartScanning(loggingDelay);
         rttFragment.findAccessPoints();
         bluetoothFragment.bluetoothStartScanning(loggingDelay);
-        sensorFragment.startSensor(loggingDelay);
-        lteFragment.startScanning(loggingDelay);
+        sensorFragment.sensorStartScanning(loggingDelay);
+        lteFragment.lteStartScanning(loggingDelay);
     }
 
     private void start() {
@@ -322,16 +322,16 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
             rttFragment.rttStopScanning();
             rttFragment.wifiStopScanning();
             bluetoothFragment.bluetoothStopScanning();
-            sensorFragment.stopSensor();
-            lteFragment.stopScanning();
+            sensorFragment.sensorStopScanning();
+            lteFragment.lteStopScanning();
             isScan = false;
         }
 
         rttFragment.wifiStartScanning(scanDelay);
         rttFragment.rttStartScanning(loggingDelay);
         bluetoothFragment.bluetoothStartScanning(loggingDelay);
-        sensorFragment.startSensor(loggingDelay);
-        lteFragment.startScanning(loggingDelay);
+        sensorFragment.sensorStartScanning(loggingDelay);
+        lteFragment.lteStartScanning(loggingDelay);
 
         contentBinding.editFileName.setEnabled(false);
         contentBinding.editBleName.setEnabled(false);
@@ -367,8 +367,8 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
 
         rttFragment.rttStartScanning(loggingDelay);
         bluetoothFragment.bluetoothStartScanning(loggingDelay);
-        sensorFragment.startSensor(loggingDelay);
-        lteFragment.startScanning(loggingDelay);
+        sensorFragment.sensorStartScanning(loggingDelay);
+        lteFragment.lteStartScanning(loggingDelay);
     }
 
     private void stop() {
@@ -406,12 +406,11 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
             rttFragment.wifiStopScanning();
             rttFragment.rttStopScanning();
             bluetoothFragment.bluetoothStopScanning();
-            sensorFragment.stopSensor();
-            lteFragment.stopScanning();
+            sensorFragment.sensorStopScanning();
+            lteFragment.lteStopScanning();
         } catch (Exception e) {
 
         }
-
     }
 
     private void startTimer() {

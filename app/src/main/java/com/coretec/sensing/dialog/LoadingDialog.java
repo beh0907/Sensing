@@ -36,4 +36,8 @@ public class LoadingDialog {
             progressDialog = null;
         }
     }
+
+    public static boolean isShowDialog() {
+        return progressDialog != null;
+    }
 }

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="300dp"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:orientation="vertical">
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/checkWifi"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20sp"
+        android:checked="true"
+        android:gravity="center"
+        android:layoutDirection="rtl"
+        android:text="Wifi"
+        android:textSize="18sp" />
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/checkRtt"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20sp"
+        android:checked="true"
+        android:gravity="center"
+        android:layoutDirection="rtl"
+        android:text="RTT"
+        android:textSize="18sp" />
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/checkBluetooth"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20sp"
+        android:checked="true"
+        android:gravity="center"
+        android:layoutDirection="rtl"
+        android:text="Bluetooth"
+        android:textSize="18sp" />
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/checkSensor"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20sp"
+        android:checked="true"
+        android:gravity="center"
+        android:layoutDirection="rtl"
+        android:text="Sensor"
+        android:textSize="18sp" />
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/checkLte"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20sp"
+        android:checked="true"
+        android:gravity="center"
+        android:layoutDirection="rtl"
+        android:text="LTE"
+        android:textSize="18sp" />
+</LinearLayout>
