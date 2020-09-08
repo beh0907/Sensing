@@ -49,6 +49,14 @@
                     android:textColor="@color/colorAccent"
                     android:textSize="20sp" />
 
+                <TextView
+                    android:id="@+id/txtLocation3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10sp"
+                    android:textColor="@color/colorAccent"
+                    android:textSize="20sp" />
+
             </LinearLayout>
 
             <com.coretec.sensing.view.MapControlView
@@ -71,10 +79,13 @@
                 android:layout_alignParentRight="true"
                 android:layout_alignParentBottom="true"
                 android:layout_gravity="right"
-                android:layout_margin="15dp"
+                android:layout_marginStart="15dp"
+                android:layout_marginTop="15dp"
+                android:layout_marginEnd="15dp"
+                android:layout_marginBottom="15dp"
                 android:src="@drawable/ic_guidance"
                 android:tint="@color/colorThird"
-                android:visibility="gone"
+                android:visibility="visible"
                 app:backgroundTint="@color/white" />
 
         </RelativeLayout>
@@ -83,7 +94,8 @@
             android:id="@+id/layoutControl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"

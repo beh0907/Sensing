@@ -206,71 +206,6 @@
         android:background="@color/black" />
 
     <LinearLayout
-        android:id="@+id/groupCombination"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16sp"
-            android:text="알고리즘 조합 수"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
-
-        <SeekBar
-            android:id="@+id/seekBarCombination"
-            style="@style/Widget.AppCompat.SeekBar.Discrete"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:max="10"
-            android:min="1"
-            android:progress="4" />
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1sp"
-        android:layout_margin="10sp"
-        android:layout_marginStart="20sp"
-        android:layout_marginTop="10sp"
-        android:layout_marginEnd="20sp"
-        android:background="@color/black" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16sp"
-            android:text="DBSCAN 필터링 기준"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
-
-        <SeekBar
-            android:id="@+id/seekBarFilter"
-            style="@style/Widget.AppCompat.SeekBar.Discrete"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:max="10"
-            android:min="1"
-            android:progress="4" />
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1sp"
-        android:layout_margin="10sp"
-        android:layout_marginStart="20sp"
-        android:layout_marginTop="10sp"
-        android:layout_marginEnd="20sp"
-        android:background="@color/black" />
-
-    <LinearLayout
         android:id="@+id/groupTrsut"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -291,5 +226,66 @@
             android:gravity="center"
             android:inputType="numberDecimal"
             android:text="0.5" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1sp"
+        android:layout_margin="10sp"
+        android:layout_marginStart="20sp"
+        android:layout_marginTop="10sp"
+        android:layout_marginEnd="20sp"
+        android:background="@color/black" />
+
+    <LinearLayout
+        android:id="@+id/groupCombination"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16sp"
+                android:text="알고리즘 조합 수"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <NumberPicker
+                android:id="@+id/pickerCombination"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16sp"
+                android:text="DBSCAN 필터링"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <NumberPicker
+                android:id="@+id/pickerFilter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+
+        </LinearLayout>
+
     </LinearLayout>
 </LinearLayout>

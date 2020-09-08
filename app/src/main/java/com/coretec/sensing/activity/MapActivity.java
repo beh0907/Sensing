@@ -35,10 +35,11 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.NumberPicker;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
-import android.widget.SeekBar;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -137,7 +138,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     //setting 다이얼로그에서 설정
     //////////////////////////////////////////////////////////////////////////////
     //RTT 조회 시 일괄로 요청하는 객체 개수
-    private boolean isUseDbScan = false;
+    private int useAlgorithm = 0;
     //RTT 조회 시 일괄로 요청하는 객체 개수
     private int useScanCount = 1;
     //DBSCAN 사용 시 반영되는 반지름 거리(m)
@@ -148,6 +149,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     private int dbScanFilter = 4;
     //RTT 정보 요청 인터벌
     private int rttInterval = 1000;
+    //RTT 정보 요청 인터벌
+    private double stdTrust = 2.5;
     //////////////////////////////////////////////////////////////////////////////
 
     //로깅 데이터 설정
@@ -166,6 +169,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     //////////////////////////////////////////////////////////////////////////////
     private CsvManager wifiCsvManager;
     private CsvManager rttCsvManager;
+    private CsvManager myLocationCsvManager;
     private CsvManager bluetoothCsvManager;
     private CsvManager sensorCsvManager;
     private CsvManager cellIdentityLteCsvManager;
@@ -237,10 +241,10 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
         activityBinding.drawerLayout.closeDrawer(GravityCompat.START);
         switch (id) {
-            case R.id.nav_logging:
-                Intent bookmark = new Intent(this, LoggingActivity.class);
-                startActivity(bookmark);
-                return false;
+//            case R.id.nav_logging:
+//                Intent bookmark = new Intent(this, LoggingActivity.class);
+//                startActivity(bookmark);
+//                return false;
 
             case R.id.nav_map:
                 return false;
@@ -325,24 +329,43 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         final RadioButton radioMedian = dialogView.findViewById(R.id.radioMedian);
         final RadioButton radioDbScan = dialogView.findViewById(R.id.radioDbScan);
         final RadioButton radioTrust = dialogView.findViewById(R.id.radioTrust);
-        final SeekBar seekBarCombination = dialogView.findViewById(R.id.seekBarCombination);
-        final SeekBar seekBarFilter = dialogView.findViewById(R.id.seekBarFilter);
+        final NumberPicker pickerCombination = dialogView.findViewById(R.id.pickerCombination);
+        final NumberPicker pickerFilter = dialogView.findViewById(R.id.pickerFilter);
+        final EditText editTrust = dialogView.findViewById(R.id.editTrust);
+
+        pickerCombination.setMinValue(1);
+        pickerCombination.setMaxValue(10);
+        pickerCombination.setValue(4);
+        pickerCombination.setWrapSelectorWheel(false);
+        pickerCombination.setOnLongPressUpdateInterval(100);
+
+        pickerFilter.setMinValue(1);
+        pickerFilter.setMaxValue(100);
+        pickerFilter.setValue(4);
+        pickerFilter.setWrapSelectorWheel(false);
+        pickerFilter.setOnLongPressUpdateInterval(100);
+
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("위치 측위 설정");
+        builder.setTitle("알고리즘 설정");
         builder.setView(dialogView);
         builder.setCancelable(false);
 
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 //combination 설정
-                combination = seekBarCombination.getProgress();
+                combination = pickerCombination.getValue();
 
                 //dbScanFilter 설정
-                dbScanFilter = seekBarFilter.getProgress();
+                dbScanFilter = pickerFilter.getValue();
 
-                //DBSCAN을 사용할 경우 거리값 설정
-                isUseDbScan = radioDbScan.isChecked();
+                //Link와 연계되는 좌표 조회
+                if (radioMedian.isChecked())
+                    useAlgorithm = 0;
+                else if (radioDbScan.isChecked())
+                    useAlgorithm = 1;
+                else
+                    useAlgorithm = 2;
 
                 //DBSCAN을 사용할 경우 거리값 설정
                 dbScanDistance = radioDistance0_5m.isChecked() ? 0.5f : 1;
@@ -353,6 +376,16 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 //RTT 통신 간격 500 or 1000ms
                 rttInterval = radio500ms.isChecked() ? 500 : 1000;
 
+                //RTT 통신 간격 500 or 1000ms
+                stdTrust = Double.parseDouble(editTrust.getText().toString());
+
+                dialog.cancel();
+            }
+        });
+
+        builder.setNegativeButton("Cancle", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
                 dialog.cancel();
             }
         });
@@ -372,7 +405,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         final MaterialCheckBox checkLte = dialogView.findViewById(R.id.checkLte);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("로깅 데이터 설정");
+        builder.setTitle("로깅 설정");
         builder.setView(dialogView);
         builder.setCancelable(false);
 
@@ -397,7 +430,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             }
         });
 
-        builder.setNegativeButton("Exit", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton("Cancle", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.cancel();
@@ -432,6 +465,15 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 initPath();
                 loadMapImage();
                 setBackgroundPosition();
+
+
+                int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
+                int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
+
+                for (Ap ap : apHashMap.values()) {
+                    int[] point = contentBinding.imgMap.pointMeterToPixel(new double[]{ap.getPoint().getX(), ap.getPoint().getY()});
+                    addPoint(parentWidth, parentHeight, point[0], point[1], R.drawable.ic_ap);
+                }
             }//권한습득 성공
 
             @Override
@@ -831,8 +873,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     //2분 4회의 wifi 스캔 제한이 있기 떄문에
     //30초에 한번식 강제적으로 스캔 시도
     private void wifiStartScanning(int delay) {
-        wifiStopScanning();
-
         wifiTimer = new TimerTask() {
             public void run() {
                 runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
@@ -849,8 +889,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     private void rttStartScanning(int delay) {
-        rttStopScanning();
-
         rttTimer = new TimerTask() {
             public void run() {
                 runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
@@ -894,8 +932,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     public void bluetoothStartScanning(int delay) {
-        bluetoothStopScanning();
-
         ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(
                 ScanSettings.SCAN_MODE_LOW_LATENCY)
                 .setReportDelay(delay)
@@ -913,7 +949,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                             String currentTime = DateUtils.getTimeStampToDateTime(result.getTimestampNanos());
 
                             if (bluetoothCsvManager != null)
-                            bluetoothCsvManager.Write(currentTime + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + "-" + "," + result.getDevice().getName() + "," + result.getDevice().getAddress() + "," + result.getRssi());
+                                bluetoothCsvManager.Write(currentTime + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + "-" + "," + result.getDevice().getName() + "," + result.getDevice().getAddress() + "," + result.getRssi());
                         }
 
                         bluetoothLoggingHashMap.clear();
@@ -928,8 +964,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     public void sensorStartScanning(int delay) {
-        sensorStopScanning();
-
         gpsTracker = new GpsTracker(this, delay);
 
         //센서 객체 초기화
@@ -955,7 +989,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                     @SuppressLint("DefaultLocale")
                     public void run() {
                         if (sensorCsvManager != null)
-                        sensorCsvManager.Write(currentDateTime + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + "-" + "," + accelerometer[0] + "," + accelerometer[1] + "," + accelerometer[2] + "," + magnetic[0] + "," + magnetic[1] + "," + magnetic[2] + "," + gyro[0] + "," + gyro[1] + "," + gyro[2] + "," + pressure + "," + altitude + "," + temperature + "," + humidity + "," + gpsLatitude + "," + gpsLongitude + "," + gpsAltitude);
+                            sensorCsvManager.Write(currentDateTime + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + "-" + "," + accelerometer[0] + "," + accelerometer[1] + "," + accelerometer[2] + "," + magnetic[0] + "," + magnetic[1] + "," + magnetic[2] + "," + gyro[0] + "," + gyro[1] + "," + gyro[2] + "," + pressure + "," + altitude + "," + temperature + "," + humidity + "," + gpsLatitude + "," + gpsLongitude + "," + gpsAltitude);
                     }
                 });
             }
@@ -967,8 +1001,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     public void lteStartScanning(int delay) {
-        lteStopScanning();
-
         lteTimer = new TimerTask() {
             @SuppressLint("MissingPermission")
             public void run() {
@@ -988,7 +1020,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                                         CellIdentityLte identityLte = cellInfoLte.getCellIdentity();
 
                                         if (cellIdentityLteCsvManager != null)
-                                        cellIdentityLteCsvManager.Write(currentDateTime + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + "-" + "," + identityLte.getBandwidth() + "," + identityLte.getCi() + "," + identityLte.getEarfcn() + "," + identityLte.getMccString() + "," + identityLte.getMncString() + "," + identityLte.getMobileNetworkOperator() + "," + identityLte.getPci() + "," + identityLte.getTac());
+                                            cellIdentityLteCsvManager.Write(currentDateTime + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + "-" + "," + identityLte.getBandwidth() + "," + identityLte.getCi() + "," + identityLte.getEarfcn() + "," + identityLte.getMccString() + "," + identityLte.getMncString() + "," + identityLte.getMobileNetworkOperator() + "," + identityLte.getPci() + "," + identityLte.getTac());
 
                                         if (cellSignalStrengthLteCsvManager == null)
                                             break;
@@ -1035,6 +1067,11 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         if (rttCsvManager != null) {
             rttCsvManager.close();
             rttCsvManager = null;
+        }
+
+        if (myLocationCsvManager != null) {
+            myLocationCsvManager.close();
+            myLocationCsvManager = null;
         }
     }
 
@@ -1155,6 +1192,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             } else {
                 if (LoadingDialog.isShowDialog()) {
                     String fileName = contentBinding.editFileName.getText().toString();
+
+                    myLocationCsvManager = new CsvManager(fileName + "_MyLocation.csv");
+                    myLocationCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,AP1 MAC,AP1 RANGE,AP2 MAC,AP2 RANGE,AP3 MAC,AP3 RANGE,AP4 MAC,AP4 RANGE,AP5 MAC,AP5 RANGE,AP6 MAC,AP6 RANGE,AP7 MAC,AP7 RANGE,AP8 MAC,AP8 RANGE,AP9 MAC,AP9 RANGE,AP10 MAC,AP10 RANGE,Median (X),Median (Y),DBscan (X),DBscan (Y),Trust (X),Trust (Y)");
 
                     if (isLoggingWifi) {
                         wifiCsvManager = new CsvManager(fileName + "_WIFI.csv");
@@ -1313,8 +1353,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 return;
             }
 
-            ArrayList<Double> locationXList2 = new ArrayList<>(locationXList);
-            ArrayList<Double> locationYList2 = new ArrayList<>(locationYList);
+            ArrayList<Double> locationDbscanXList = new ArrayList<>(locationXList);
+            ArrayList<Double> locationDbscanYList = new ArrayList<>(locationYList);
 
             //====================================================================================================================================================
             //기존 그룹군의 중위값으로 위치 측위
@@ -1325,26 +1365,63 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             //====================================================================================================================================================
 
             //====================================================================================================================================================
+            //median 알고리즘을 통해 구한 예비위치를 기반으로 그룹별 신뢰도를 감안하여 최종 위치정보 수집
+            ArrayList<Double> locationTrustXList = new ArrayList<>();
+            ArrayList<Double> locationTrustYList = new ArrayList<>();
+
+            for (List<RangingResult> each : groupRttList) {
+                double trust = 0;
+                int count = 0;
+
+                for (RangingResult rangingResult : each) {
+                    if (rangingResult.getStatus() == RangingResult.STATUS_FAIL)
+                        continue;
+
+                    Ap ap = apHashMap.get(rangingResult.getMacAddress().toString());
+                    //거리 정보는 mm단위로 제공되기 때문에 m단위로 변환하여 계산
+                    trust += Math.abs((rangingResult.getDistanceMm() * 1000) - Calculation.getPoint2PointDistance(medianLocation, ap.getPoint()));
+                    ++count;
+                }
+
+                trust /= count;
+
+                if (stdTrust >= trust) {
+                    double[][] myLocation = Calculation.getMyLocation(each, apHashMap);
+
+                    if (myLocation != null) {
+                        locationTrustXList.add(myLocation[0][0]);
+                        locationTrustYList.add(myLocation[1][0]);
+                    }
+                }
+            }
+
+            Collections.sort(locationTrustXList, ascending);
+            Collections.sort(locationTrustYList, ascending);
+
+            Point trustLocation = new Point(locationXList.get(locationTrustXList.size() / 2), locationYList.get(locationTrustYList.size() / 2));
+            //====================================================================================================================================================
+
+            //====================================================================================================================================================
             //기존 그룹군 데이터를 기반으로 DBSCAN 알고리즘 반영
             ArrayList<Double> dbScanXList = new ArrayList<>();
             ArrayList<Double> dbScanYList = new ArrayList<>();
 
-            for (int i = 0; i < locationXList2.size(); i++) {
+            for (int i = 0; i < locationDbscanXList.size(); i++) {
                 ArrayList<Double> tempXList = new ArrayList<>();
                 ArrayList<Double> tempYList = new ArrayList<>();
 
-                Point criteriaPoint = new Point(locationXList2.get(i), locationYList2.get(i));
+                Point criteriaPoint = new Point(locationDbscanXList.get(i), locationDbscanYList.get(i));
 
                 tempXList.add(criteriaPoint.getX());
                 tempYList.add(criteriaPoint.getY());
 
                 int count = 1;
 
-                for (int j = 0; j < locationXList2.size(); j++) {
+                for (int j = 0; j < locationDbscanXList.size(); j++) {
                     if (i == j)
                         continue;
 
-                    Point point = new Point(locationXList2.get(j), locationYList2.get(j));
+                    Point point = new Point(locationDbscanXList.get(j), locationDbscanYList.get(j));
 
                     double distance = Calculation.getPoint2PointDistance(criteriaPoint, point);
 
@@ -1363,8 +1440,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             }
 
             if (dbScanXList.size() == 0 || dbScanYList.size() == 0) {
-                if (rttCsvManager != null)
-                    rttCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + ",=에러=");
+                if (myLocationCsvManager != null)
+                    myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + ",=에러=");
                 return;
             }
 
@@ -1374,10 +1451,17 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             //====================================================================================================================================================
 
 
-            if (isUseDbScan)
-                myLocation = dbscanLocation;
-            else
-                myLocation = medianLocation;
+            switch (useAlgorithm) {
+                case 0:
+                    myLocation = medianLocation;
+                    break;
+                case 1:
+                    myLocation = dbscanLocation;
+                    break;
+                case 2:
+                    myLocation = trustLocation;
+                    break;
+            }
 
             setMyLocationView(myLocation);
             getNearestLink(nodeArrayList, linkArrayList, myLocation);
@@ -1385,12 +1469,28 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             Log.d("RTT 실내위치 측위", myLocation.toString());
             Log.d("RTT 실내위치 측위 보정", myLocation2.toString());
 
-            if (rttCsvManager != null)
-                rttCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + ",,,,,,,,,,,," + medianLocation.getX() + "," + medianLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY());
+            String apData = "";
+            int count = 0;
+
+            for (RangingResult rangingResult : list) {
+                if (rangingResult.getStatus() == RangingResult.STATUS_FAIL) {
+                    ++count;
+                    continue;
+                }
+
+                apData += rangingResult.getMacAddress().toString() + "," + rangingResult.getDistanceMm() + ",";
+            }
+
+            for (int i = list.size() - count; i < 10; i++) {
+                apData += ", ,";
+            }
+            if (myLocationCsvManager != null)
+                myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + apData + medianLocation.getX() + "," + medianLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY() + "," + trustLocation.getX() + "," + trustLocation.getY());
 
             contentBinding.txtTime.setText(DateUtils.getCurrentCsvFileName());
-            contentBinding.txtLocation.setText(myLocation.getX() + "m - " + myLocation.getY() + "m");
-            contentBinding.txtLocation2.setText(myLocation2.getX() + "m - " + myLocation2.getY() + "m");
+            contentBinding.txtLocation.setText(medianLocation.getX() + "m - " + medianLocation.getY() + "m");
+            contentBinding.txtLocation2.setText(dbscanLocation.getX() + "m - " + dbscanLocation.getY() + "m");
+            contentBinding.txtLocation3.setText(trustLocation.getX() + "m - " + trustLocation.getY() + "m");
 
             list.clear();
 //            accessPointsSupporting80211mcInfo.clear();
