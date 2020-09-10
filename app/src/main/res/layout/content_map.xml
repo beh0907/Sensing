@@ -85,7 +85,7 @@
                 android:layout_marginBottom="15dp"
                 android:src="@drawable/ic_guidance"
                 android:tint="@color/colorThird"
-                android:visibility="visible"
+                android:visibility="gone"
                 app:backgroundTint="@color/white" />
 
         </RelativeLayout>
@@ -94,8 +94,7 @@
             android:id="@+id/layoutControl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -150,13 +149,20 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnScan"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="SCAN" />
+
                 <androidx.appcompat.widget.AppCompatToggleButton
                     android:id="@+id/btnStart"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:textOff="START"
-                    android:textOn="END" />
+                    android:textOn="PAUSE" />
 
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btnNext"
@@ -164,6 +170,13 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="NEXT" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnEnd"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="END" />
             </LinearLayout>
 
             <LinearLayout

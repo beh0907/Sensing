@@ -12,9 +12,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import androidx.databinding.DataBindingUtil;
-import androidx.fragment.app.Fragment;
-
 import com.coretec.sensing.R;
 import com.coretec.sensing.activity.LoggingActivity;
 import com.coretec.sensing.databinding.FragmentLteBinding;
@@ -25,6 +22,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import androidx.databinding.DataBindingUtil;
+import androidx.fragment.app.Fragment;
 
 public class LteFragment extends Fragment {
 
@@ -75,14 +75,14 @@ public class LteFragment extends Fragment {
 
     public void createCsvFile(String fileName) {
         //LTE
-        csvCellIdentityLteManager = new CsvManager( fileName + "_CellIdentityLte.csv");
-        csvCellIdentityLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,BandWidth,Ci,Earfcn,Mcc,Mnc,NetworkOperator,Pci,Tac");
-        csvCellSignalStrengthLteManager = new CsvManager( fileName + "_CellSignalStrengthLte.csv");
+        csvCellIdentityLteManager = new CsvManager(fileName + "_CellIdentityLte.csv");
+        csvCellIdentityLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,BandWidth,Ci,Earfcn,Mcc,Mnc,NetworkOperator,Pci,Tac");
+        csvCellSignalStrengthLteManager = new CsvManager(fileName + "_CellSignalStrengthLte.csv");
 
         if (android.os.Build.VERSION.SDK_INT >= 29) {
-            csvCellSignalStrengthLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssi,Rssnr,TimingAdvance");
+            csvCellSignalStrengthLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssi,Rssnr,TimingAdvance");
         } else {
-            csvCellSignalStrengthLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssnr,TimingAdvance");
+            csvCellSignalStrengthLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssnr,TimingAdvance");
         }
 
     }
@@ -91,8 +91,8 @@ public class LteFragment extends Fragment {
         isLogging = logging;
     }
 
-    public void lteStartScanning(int delay) {
-        lteStopScanning();
+    public void startScanning(int delay) {
+        stopScanning();
 
         lteTimer = new TimerTask() {
             @SuppressLint("MissingPermission")
@@ -100,7 +100,6 @@ public class LteFragment extends Fragment {
                 String currentDateTime = DateUtils.getCurrentDateTime();
                 long runtime = loggingActivity.getRuntime();
                 int ptNum = loggingActivity.getPtNum();
-                int Status = loggingActivity.getStatus();
 
 
                 Objects.requireNonNull(getActivity()).runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
@@ -122,12 +121,12 @@ public class LteFragment extends Fragment {
                                             sensorBinding.txtPci.setText(identityLte.getPci() + "");
                                             sensorBinding.txtRsrp.setText(cellSignalStrengthLte.getRsrp() + "");
 
-                                            csvCellIdentityLteManager.Write(currentDateTime + "," + runtime + "," + ptNum + "," + Status + "," + identityLte.getBandwidth() + "," + identityLte.getCi() + "," + identityLte.getEarfcn() + "," + identityLte.getMccString() + "," + identityLte.getMncString() + "," + identityLte.getMobileNetworkOperator() + "," + identityLte.getPci() + "," + identityLte.getTac());
+                                            csvCellIdentityLteManager.Write(currentDateTime + "," + runtime + "," + ptNum + "," + identityLte.getBandwidth() + "," + identityLte.getCi() + "," + identityLte.getEarfcn() + "," + identityLte.getMccString() + "," + identityLte.getMncString() + "," + identityLte.getMobileNetworkOperator() + "," + identityLte.getPci() + "," + identityLte.getTac());
 
                                             if (android.os.Build.VERSION.SDK_INT >= 29) {
-                                                csvCellSignalStrengthLteManager.Write(currentDateTime + "," + runtime + "," + ptNum + "," + Status + "," + cellSignalStrengthLte.getAsuLevel() + "," + cellSignalStrengthLte.getCqi() + "," + cellSignalStrengthLte.getDbm() + "," + cellSignalStrengthLte.getAsuLevel() + "," + cellSignalStrengthLte.getRsrp() + "," + cellSignalStrengthLte.getRsrq() + "," + cellSignalStrengthLte.getRssi() + "," + cellSignalStrengthLte.getRssnr() + "," + cellSignalStrengthLte.getTimingAdvance());
+                                                csvCellSignalStrengthLteManager.Write(currentDateTime + "," + runtime + "," + ptNum + "," + cellSignalStrengthLte.getAsuLevel() + "," + cellSignalStrengthLte.getCqi() + "," + cellSignalStrengthLte.getDbm() + "," + cellSignalStrengthLte.getAsuLevel() + "," + cellSignalStrengthLte.getRsrp() + "," + cellSignalStrengthLte.getRsrq() + "," + cellSignalStrengthLte.getRssi() + "," + cellSignalStrengthLte.getRssnr() + "," + cellSignalStrengthLte.getTimingAdvance());
                                             } else {
-                                                csvCellSignalStrengthLteManager.Write(currentDateTime + "," + runtime + "," + ptNum + "," + Status + "," + cellSignalStrengthLte.getAsuLevel() + "," + cellSignalStrengthLte.getCqi() + "," + cellSignalStrengthLte.getDbm() + "," + cellSignalStrengthLte.getAsuLevel() + "," + cellSignalStrengthLte.getRsrp() + "," + cellSignalStrengthLte.getRsrq() + ","  + + cellSignalStrengthLte.getRssnr() + "," + cellSignalStrengthLte.getTimingAdvance());
+                                                csvCellSignalStrengthLteManager.Write(currentDateTime + "," + runtime + "," + ptNum + "," + cellSignalStrengthLte.getAsuLevel() + "," + cellSignalStrengthLte.getCqi() + "," + cellSignalStrengthLte.getDbm() + "," + cellSignalStrengthLte.getAsuLevel() + "," + cellSignalStrengthLte.getRsrp() + "," + cellSignalStrengthLte.getRsrq() + "," + +cellSignalStrengthLte.getRssnr() + "," + cellSignalStrengthLte.getTimingAdvance());
                                             }
                                             break;
                                         }
@@ -146,7 +145,14 @@ public class LteFragment extends Fragment {
         timer.schedule(lteTimer, 0, delay);
     }
 
-    public void lteStopScanning() {
+    public void stopScanning() {
+        if (lteTimer != null) {
+            lteTimer.cancel();
+            lteTimer = null;
+        }
+    }
+
+    public void endScanning() {
         if (lteTimer != null) {
             lteTimer.cancel();
             lteTimer = null;

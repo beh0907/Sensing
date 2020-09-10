@@ -6,54 +6,6 @@
     android:orientation="vertical">
 
     <LinearLayout
-        android:id="@+id/groupTime"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20sp"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16sp"
-            android:gravity="center"
-            android:text="RTT 통신 간격"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
-
-        <RadioGroup
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/radio500ms"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="500ms"
-                android:textSize="16sp" />
-
-            <RadioButton
-                android:id="@+id/radio1000ms"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="1000ms"
-                android:textSize="16sp" />
-        </RadioGroup>
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1sp"
-        android:layout_margin="10sp"
-        android:layout_marginStart="20sp"
-        android:layout_marginTop="10sp"
-        android:layout_marginEnd="20sp"
-        android:background="@color/black" />
-
-    <LinearLayout
         android:id="@+id/groupData"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -64,7 +16,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16sp"
             android:gravity="center"
-            android:text="RTT 통신 객체 개수"
+            android:text="RTT 일괄 통신 객체 개수"
             android:textColor="@color/black"
             android:textSize="16sp" />
 
@@ -90,7 +42,38 @@
                 android:textSize="16sp" />
 
         </RadioGroup>
+    </LinearLayout>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1sp"
+        android:layout_margin="10sp"
+        android:layout_marginStart="20sp"
+        android:layout_marginTop="10sp"
+        android:layout_marginEnd="20sp"
+        android:background="@color/black" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16sp"
+            android:gravity="center"
+            android:text="RTT 총 통신 개수"
+            android:textColor="@color/black"
+            android:textSize="16sp" />
+
+        <EditText
+            android:id="@+id/editApCount"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:inputType="numberDecimal"
+            android:text="10" />
     </LinearLayout>
 
     <View
@@ -139,10 +122,10 @@
                 android:textSize="16sp" />
 
             <RadioButton
-                android:id="@+id/radioTrust"
+                android:id="@+id/radioReliability"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Trust"
+                android:text="Reliability"
                 android:textSize="16sp" />
 
 
@@ -169,31 +152,17 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16sp"
-            android:text="DBSCAN 거리 설정"
+            android:text="DBSCAN 반경(m)"
             android:textColor="@color/black"
             android:textSize="16sp" />
 
-        <RadioGroup
+        <EditText
+            android:id="@+id/editRadius"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:gravity="center"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/radioDistance0_5m"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="0.5m"
-                android:textSize="16sp" />
-
-            <RadioButton
-                android:id="@+id/radioDistance1m"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1m"
-                android:textSize="16sp" />
-        </RadioGroup>
+            android:inputType="numberDecimal"
+            android:text="0.5" />
     </LinearLayout>
 
     <View
@@ -215,12 +184,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16sp"
-            android:text="신뢰도 기준 값"
+            android:text="Reliability 임계치(m)"
             android:textColor="@color/black"
             android:textSize="16sp" />
 
         <EditText
-            android:id="@+id/editTrust"
+            android:id="@+id/editReliability"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
@@ -274,8 +243,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16sp"
-                android:text="DBSCAN 필터링"
+                android:text="DBSCAN 포인트 수"
                 android:textColor="@color/black"
                 android:textSize="16sp" />
 

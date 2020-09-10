@@ -5,58 +5,199 @@
     android:layout_gravity="center"
     android:orientation="vertical">
 
-    <com.google.android.material.checkbox.MaterialCheckBox
-        android:id="@+id/checkWifi"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20sp"
-        android:checked="true"
-        android:gravity="center"
-        android:layoutDirection="rtl"
-        android:text="Wifi"
-        android:textSize="18sp" />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-    <com.google.android.material.checkbox.MaterialCheckBox
-        android:id="@+id/checkRtt"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20sp"
-        android:checked="true"
-        android:gravity="center"
-        android:layoutDirection="rtl"
-        android:text="RTT"
-        android:textSize="18sp" />
+        <LinearLayout
+            android:layout_toStartOf="@id/checkWifi"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20sp"
+            android:orientation="vertical">
 
-    <com.google.android.material.checkbox.MaterialCheckBox
-        android:id="@+id/checkBluetooth"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20sp"
-        android:checked="true"
-        android:gravity="center"
-        android:layoutDirection="rtl"
-        android:text="Bluetooth"
-        android:textSize="18sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16sp"
+                android:gravity="center"
+                android:text="Wifi 통신 주기(ms)"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
 
-    <com.google.android.material.checkbox.MaterialCheckBox
-        android:id="@+id/checkSensor"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20sp"
-        android:checked="true"
-        android:gravity="center"
-        android:layoutDirection="rtl"
-        android:text="Sensor"
-        android:textSize="18sp" />
+            <EditText
+                android:id="@+id/editWifiInterval"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:inputType="numberDecimal"
+                android:text="30000" />
+        </LinearLayout>
 
-    <com.google.android.material.checkbox.MaterialCheckBox
-        android:id="@+id/checkLte"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20sp"
-        android:checked="true"
-        android:gravity="center"
-        android:layoutDirection="rtl"
-        android:text="LTE"
-        android:textSize="18sp" />
+        <CheckBox
+            android:layout_centerVertical="true"
+            android:layout_alignParentEnd="true"
+            android:id="@+id/checkWifi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+    </RelativeLayout>
+
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_toStartOf="@id/checkRtt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20sp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16sp"
+                android:gravity="center"
+                android:text="RTT 통신 주기(ms)"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <EditText
+                android:id="@+id/editRttInterval"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:inputType="numberDecimal"
+                android:text="1000" />
+        </LinearLayout>
+
+        <CheckBox
+            android:layout_centerVertical="true"
+            android:layout_alignParentEnd="true"
+            android:id="@+id/checkRtt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+    </RelativeLayout>
+
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_toStartOf="@id/checkBluetooth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20sp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16sp"
+                android:gravity="center"
+                android:text="Sensor 통신 주기(ms)"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <EditText
+                android:id="@+id/editSensorInterval"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:inputType="numberDecimal"
+                android:text="50" />
+        </LinearLayout>
+
+        <CheckBox
+            android:layout_centerVertical="true"
+            android:layout_alignParentEnd="true"
+            android:id="@+id/checkBluetooth"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+    </RelativeLayout>
+
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_toStartOf="@id/checkSensor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20sp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16sp"
+                android:gravity="center"
+                android:text="Bluetooth 통신 주기(ms)"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <EditText
+                android:id="@+id/editBluetoothInterval"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:inputType="numberDecimal"
+                android:text="1000" />
+        </LinearLayout>
+
+        <CheckBox
+            android:layout_centerVertical="true"
+            android:layout_alignParentEnd="true"
+            android:id="@+id/checkSensor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_toStartOf="@id/checkLte"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20sp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16sp"
+                android:gravity="center"
+                android:text="LTE 통신 주기(ms)"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <EditText
+                android:id="@+id/editLteInterval"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:inputType="numberDecimal"
+                android:text="1000" />
+        </LinearLayout>
+
+        <CheckBox
+            android:layout_centerVertical="true"
+            android:layout_alignParentEnd="true"
+            android:id="@+id/checkLte"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+    </RelativeLayout>
 </LinearLayout>

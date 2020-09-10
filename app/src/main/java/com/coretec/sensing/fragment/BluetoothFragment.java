@@ -12,10 +12,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import androidx.databinding.DataBindingUtil;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-
 import com.coretec.sensing.R;
 import com.coretec.sensing.activity.LoggingActivity;
 import com.coretec.sensing.adapter.BluetoothListAdapter;
@@ -32,30 +28,26 @@ import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import androidx.databinding.DataBindingUtil;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+
 public class BluetoothFragment extends Fragment {
 
+    private static TimerTask bluetoothTimer;
     private LoggingActivity loggingActivity;
-
     private FragmentBluetoothBinding bluetoothBinding;
-
     private ArrayList<Bluetooth> bluetoothArrayList;
     private BluetoothListAdapter bluetoothListAdapter;
-
-    private HashMap<String, android.bluetooth.le.ScanResult> bluetoothListHashMap;
-    private HashMap<String, android.bluetooth.le.ScanResult> bluetoothLoggingHashMap;
-
+    private HashMap<String, ScanResult> bluetoothListHashMap;
+    private HashMap<String, ScanResult> bluetoothLoggingHashMap;
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothLeScanner bluetoothLeScanner;
-    private ScanCallback leScanCallback;
-
     private String[] bluetoothFilterBssid;
-
     private boolean isLogging = false;
-
+    private ScanCallback leScanCallback;
     private CsvManager csvManager;
-
-    private static TimerTask bluetoothTimer;
 
     //프래그먼트에 쓸 객체 리시브
     //프래그먼트에 쓸 객체는 bundle로 arguments 저장을 해야 함
@@ -79,16 +71,15 @@ public class BluetoothFragment extends Fragment {
         View view = bluetoothBinding.getRoot();
         view.setTag(1);
 
-        initList();
-        initBluetooth();
-
-        loggingActivity = ((LoggingActivity) getActivity());
         return view;
     }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        initList();
+        initBluetooth();
+        loggingActivity = ((LoggingActivity) getActivity());
     }
 
     public void setLogging(boolean logging) {
@@ -120,7 +111,7 @@ public class BluetoothFragment extends Fragment {
 
         leScanCallback = new ScanCallback() {
             @Override
-            public void onScanResult(int callbackType, android.bluetooth.le.ScanResult result) {
+            public void onScanResult(int callbackType, ScanResult result) {
                 super.onScanResult(callbackType, result);
                 String address = result.getDevice().getAddress();
 
@@ -186,13 +177,12 @@ public class BluetoothFragment extends Fragment {
 
         long runTime = loggingActivity.getRuntime();
         int ptNum = loggingActivity.getPtNum();
-        int Status = loggingActivity.getStatus();
 
         for (ScanResult result : bluetoothLoggingHashMap.values()) {
             currentTime = DateUtils.getTimeStampToDateTime(result.getTimestampNanos());
 
             if (isLogging && csvManager != null)
-                csvManager.Write(currentTime + "," + runTime + "," + ptNum + "," + Status + "," + result.getDevice().getName() + "," + result.getDevice().getAddress() + "," + result.getRssi());
+                csvManager.Write(currentTime + "," + runTime + "," + ptNum + "," + result.getDevice().getName() + "," + result.getDevice().getAddress() + "," + result.getRssi());
         }
 
         bluetoothLoggingHashMap.clear();
@@ -200,8 +190,8 @@ public class BluetoothFragment extends Fragment {
     }
 
     public void createCsvFile(String fileName) {
-        csvManager = new CsvManager( fileName + "_Bluetooth.csv");
-        csvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,RSSI");
+        csvManager = new CsvManager(fileName + "_Bluetooth.csv");
+        csvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,SSID,BSSID,RSSI");
     }
 
     public void bluetoothStartScanning(int delay) {

@@ -41,20 +41,10 @@ import android.widget.NumberPicker;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.GravityCompat;
-import androidx.databinding.DataBindingUtil;
-import androidx.drawerlayout.widget.DrawerLayout;
-
 import com.coretec.sensing.R;
 import com.coretec.sensing.databinding.ActivityMapBinding;
 import com.coretec.sensing.databinding.ContentMapBinding;
 import com.coretec.sensing.dialog.AlarmDialog;
-import com.coretec.sensing.dialog.LoadingDialog;
 import com.coretec.sensing.listener.OnTouchMapListener;
 import com.coretec.sensing.model.Ap;
 import com.coretec.sensing.model.Link;
@@ -91,6 +81,14 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.databinding.DataBindingUtil;
+import androidx.drawerlayout.widget.DrawerLayout;
 import lombok.SneakyThrows;
 import no.wtw.android.dijkstra.DijkstraAlgorithm;
 import no.wtw.android.dijkstra.model.Edge;
@@ -137,20 +135,20 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
     //setting 다이얼로그에서 설정
     //////////////////////////////////////////////////////////////////////////////
-    //RTT 조회 시 일괄로 요청하는 객체 개수
+    //링크과 연계하여 보정 결과 표출 알고리즘 설정
     private int useAlgorithm = 0;
     //RTT 조회 시 일괄로 요청하는 객체 개수
     private int useScanCount = 1;
+    //RTT 요청 시 총 요청 객체 개수
+    private int apScanCount = 10;
     //DBSCAN 사용 시 반영되는 반지름 거리(m)
     private double dbScanDistance = 0.5f;
     //조합 개수 기준
     private int combination = 4;
     //DBSCAN 거리 내 AP 인접 수 필터 기준
     private int dbScanFilter = 4;
-    //RTT 정보 요청 인터벌
-    private int rttInterval = 1000;
-    //RTT 정보 요청 인터벌
-    private double stdTrust = 2.5;
+    //임계치 값
+    private double stdReliability = 2.5;
     //////////////////////////////////////////////////////////////////////////////
 
     //로깅 데이터 설정
@@ -161,8 +159,21 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     private boolean isLoggingSensor = true;
     private boolean isLoggingLte = true;
 
+    //RTT 정보 요청 인터벌
+    private int wifiInterval = 30000;
+    //RTT 정보 요청 인터벌
+    private int rttInterval = 1000;
+    //RTT 정보 요청 인터벌
+    private int blueToothInterval = 1000;
+    //RTT 정보 요청 인터벌
+    private int sensorInterval = 50;
+    //RTT 정보 요청 인터벌
+    private int lteInterval = 1000;
+
     //현재 로깅 중인지 체크
     private boolean isLogging = false;
+    //파일 저장 중인지 체크
+    private boolean isCreateFile = false;
     //////////////////////////////////////////////////////////////////////////////
 
     //CSV 로깅 객체
@@ -320,18 +331,17 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
         View dialogView = activity.getLayoutInflater().inflate(R.layout.dialog_setting, null);
 
-        final RadioButton radioOne = dialogView.findViewById(R.id.radioOne);
-        final RadioButton radioTen = dialogView.findViewById(R.id.radioTen);
-        final RadioButton radioDistance0_5m = dialogView.findViewById(R.id.radioDistance0_5m);
-        final RadioButton radioDistance1m = dialogView.findViewById(R.id.radioDistance1m);
-        final RadioButton radio500ms = dialogView.findViewById(R.id.radio500ms);
-        final RadioButton radio1000ms = dialogView.findViewById(R.id.radio1000ms);
         final RadioButton radioMedian = dialogView.findViewById(R.id.radioMedian);
         final RadioButton radioDbScan = dialogView.findViewById(R.id.radioDbScan);
-        final RadioButton radioTrust = dialogView.findViewById(R.id.radioTrust);
+        final RadioButton radioReliability = dialogView.findViewById(R.id.radioReliability);
+        final RadioButton radioOne = dialogView.findViewById(R.id.radioOne);
+        final RadioButton radioTen = dialogView.findViewById(R.id.radioTen);
         final NumberPicker pickerCombination = dialogView.findViewById(R.id.pickerCombination);
         final NumberPicker pickerFilter = dialogView.findViewById(R.id.pickerFilter);
-        final EditText editTrust = dialogView.findViewById(R.id.editTrust);
+        final EditText editRttInterval = dialogView.findViewById(R.id.editRttInterval);
+        final EditText editRadius = dialogView.findViewById(R.id.editRadius);
+        final EditText editApCount = dialogView.findViewById(R.id.editApCount);
+        final EditText editReliability = dialogView.findViewById(R.id.editReliability);
 
         pickerCombination.setMinValue(1);
         pickerCombination.setMaxValue(10);
@@ -368,16 +378,19 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                     useAlgorithm = 2;
 
                 //DBSCAN을 사용할 경우 거리값 설정
-                dbScanDistance = radioDistance0_5m.isChecked() ? 0.5f : 1;
+                dbScanDistance = Double.parseDouble(editRadius.getText().toString());
 
                 //10개씩 혹은 1개씩 RTT 조회
-                useScanCount = radioTen.isChecked() ? 10 : 1;
+                useScanCount = radioOne.isChecked() ? 1 : 10;
 
-                //RTT 통신 간격 500 or 1000ms
-                rttInterval = radio500ms.isChecked() ? 500 : 1000;
+                //총 요청 개수
+                apScanCount = Integer.parseInt(editApCount.getText().toString());
 
-                //RTT 통신 간격 500 or 1000ms
-                stdTrust = Double.parseDouble(editTrust.getText().toString());
+                //RTT 통신 주기(ms) 500 or 1000ms
+                rttInterval = Integer.parseInt(editRttInterval.getText().toString());
+
+                //RTT 통신 주기(ms) 500 or 1000ms
+                stdReliability = Double.parseDouble(editReliability.getText().toString());
 
                 dialog.cancel();
             }
@@ -404,6 +417,12 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         final MaterialCheckBox checkSensor = dialogView.findViewById(R.id.checkSensor);
         final MaterialCheckBox checkLte = dialogView.findViewById(R.id.checkLte);
 
+        final EditText editWifiInterval = dialogView.findViewById(R.id.editWifiInterval);
+        final EditText editRttInterval = dialogView.findViewById(R.id.editRttInterval);
+        final EditText editBluetoothInterval = dialogView.findViewById(R.id.editBluetoothInterval);
+        final EditText editSensorInterval = dialogView.findViewById(R.id.editSensorInterval);
+        final EditText editLteInterval = dialogView.findViewById(R.id.editLteInterval);
+
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle("로깅 설정");
         builder.setView(dialogView);
@@ -413,18 +432,29 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             public void onClick(DialogInterface dialog, int which) {
                 //와이파이 로깅 여부 설정
                 isLoggingWifi = checkWifi.isChecked();
-
                 //RTT 로깅 여부 설정
                 isLoggingRtt = checkRtt.isChecked();
-
                 //블루투스 로깅 여부 설정
                 isLoggingBluetooth = checkBluetooth.isChecked();
-
                 //센서 로깅 여부 설정
                 isLoggingSensor = checkSensor.isChecked();
-
                 //LTE 로깅 여부 설정
                 isLoggingLte = checkLte.isChecked();
+
+                //와이파이 주기 설정
+                wifiInterval = Integer.parseInt(editWifiInterval.getText().toString());
+
+                //RTT 주기 설정
+                rttInterval = Integer.parseInt(editRttInterval.getText().toString());
+
+                //블루투스 주기 설정
+                blueToothInterval = Integer.parseInt(editBluetoothInterval.getText().toString());
+
+                //센서 주기 설정
+                sensorInterval = Integer.parseInt(editSensorInterval.getText().toString());
+
+                //LTE 주기 설정
+                lteInterval = Integer.parseInt(editLteInterval.getText().toString());
 
                 dialog.cancel();
             }
@@ -523,8 +553,10 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setElevation(0f);
 
+        contentBinding.btnScan.setOnClickListener(this::onClick);
         contentBinding.btnStart.setOnClickListener(this::onClick);
         contentBinding.btnNext.setOnClickListener(this::onClick);
+        contentBinding.btnEnd.setOnClickListener(this::onClick);
 
         contentBinding.imgMap.setOnTouchMapView(this);
         contentBinding.btnFind.setOnClickListener(this::onClick);
@@ -791,54 +823,125 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 contentBinding.imgMap.initPath();
                 break;
 
+            case R.id.btnScan:
+                scanWifi();
+                break;
+
             case R.id.btnStart:
                 if (contentBinding.btnStart.isChecked())
                     start();
                 else
-                    end();
+                    pause();
                 break;
 
             case R.id.btnNext:
                 contentBinding.txtPtNum.setText(++ptNum + "");
                 break;
+
+            case R.id.btnEnd:
+                end();
+                break;
         }
     }
 
     private void start() {
-        String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + File.separator;
-        String fileName = contentBinding.editFileName.getText().toString();
+        if (!isCreateFile) {
+            String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + File.separator;
+            String fileName = contentBinding.editFileName.getText().toString();
 
-        File fileWifi = new File(filePath, fileName + "_WIFI.csv");
-        File fileRtt = new File(filePath, fileName + "_RTT.csv");
-        File fileBluetooth = new File(filePath, fileName + "_Bluetooth.csv");
-        File fileSensor = new File(filePath, fileName + "_Sensor.csv");
-        File fileIdentityLte = new File(filePath, fileName + "_CellIdentityLte.csv");
-        File fileStrengthLte = new File(filePath, fileName + "_CellSignalStrengthLte.csv");
+            File fileWifi = new File(filePath, fileName + "_WIFI.csv");
+            File fileRtt = new File(filePath, fileName + "_RTT.csv");
+            File fileBluetooth = new File(filePath, fileName + "_Bluetooth.csv");
+            File fileSensor = new File(filePath, fileName + "_Sensor.csv");
+            File fileIdentityLte = new File(filePath, fileName + "_CellIdentityLte.csv");
+            File fileStrengthLte = new File(filePath, fileName + "_CellSignalStrengthLte.csv");
 
-        if (fileWifi.exists() || fileRtt.exists() || fileBluetooth.exists() || fileSensor.exists() || fileIdentityLte.exists() || fileStrengthLte.exists()) {
-            contentBinding.btnStart.setChecked(false);
-            AlarmDialog.showDialog(this, "파일명이 중복되어 스캔할 수 없습니다.\n파일을 삭제하거나 작성 파일명을 수정해주세요.");
-            return;
+            if (fileWifi.exists() || fileRtt.exists() || fileBluetooth.exists() || fileSensor.exists() || fileIdentityLte.exists() || fileStrengthLte.exists()) {
+                contentBinding.btnStart.setChecked(false);
+                AlarmDialog.showDialog(this, "파일명이 중복되어 스캔할 수 없습니다.\n파일을 삭제하거나 작성 파일명을 수정해주세요.");
+                return;
+            }
+
+            myLocationCsvManager = new CsvManager(fileName + "_MyLocation.csv");
+            myLocationCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,AP1 MAC,AP1 RANGE,AP2 MAC,AP2 RANGE,AP3 MAC,AP3 RANGE,AP4 MAC,AP4 RANGE,AP5 MAC,AP5 RANGE,AP6 MAC,AP6 RANGE,AP7 MAC,AP7 RANGE,AP8 MAC,AP8 RANGE,AP9 MAC,AP9 RANGE,AP10 MAC,AP10 RANGE,Median (X),Median (Y),DBscan (X),DBscan (Y),Reliability (X),Reliability (Y)");
+
+            if (isLoggingWifi) {
+                wifiCsvManager = new CsvManager(fileName + "_WIFI.csv");
+                wifiCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,centerFreq0,centerFreq1,channelWidth,frequency,level");
+            }
+
+            if (isLoggingRtt) {
+                rttCsvManager = new CsvManager(fileName + "_RTT.csv");
+                rttCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,RttStatus,Distance(Mm),DistanceStdDev(Mm),Rssi,timestamp,NumAttemptedMeasurements,NumSuccessfulMeasurements");
+            }
+
+            if (isLoggingBluetooth) {
+                bluetoothCsvManager = new CsvManager(fileName + "_Bluetooth.csv");
+                bluetoothCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,RSSI");
+            }
+
+            if (isLoggingSensor) {
+                sensorCsvManager = new CsvManager(fileName + "_Sensor.csv");
+                sensorCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,acceleration X,acceleration Y,acceleration Z,Geomagnetic X,Geomagnetic Y,Geomagnetic Z,gyro X,gyro Y,gyro Z,Pressure(hPa),Altitude(m),Temperature,Humidity,GPSLatitude,GPSLongitude,GPSAltitude");
+            }
+
+            if (isLoggingLte) {
+                cellIdentityLteCsvManager = new CsvManager(fileName + "_CellIdentityLte.csv");
+                cellIdentityLteCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,BandWidth,Ci,Earfcn,Mcc,Mnc,NetworkOperator,Pci,Tac");
+                cellSignalStrengthLteCsvManager = new CsvManager(fileName + "_CellSignalStrengthLte.csv");
+
+                if (android.os.Build.VERSION.SDK_INT >= 29) {
+                    cellSignalStrengthLteCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssi,Rssnr,TimingAdvance");
+                } else {
+                    cellSignalStrengthLteCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssnr,TimingAdvance");
+                }
+            }
         }
+        startTimer();
+
+        wifiStartScanning(wifiInterval);
+        rttStartScanning(rttInterval);
+        bluetoothStartScanning(blueToothInterval);
+        sensorStartScanning(sensorInterval);
+        lteStartScanning(lteInterval);
+
+        isCreateFile = true;
         isLogging = true;
+//        LoadingDialog.showDialog(MapActivity.this, "AP를 스캔 중입니다... (" + accessPointsSupporting80211mc.size() + "/" + useScanCount + ")");
 
-        ptNum = 1;
-        contentBinding.txtPtNum.setText(ptNum + "");
-
-        LoadingDialog.showDialog(MapActivity.this, "AP를 스캔 중입니다... (" + accessPointsSupporting80211mc.size() + "/" + useScanCount + ")");
-        scanWifi();
+        contentBinding.editFileName.setEnabled(false);
+        contentBinding.btnScan.setEnabled(false);
     }
 
-    private void end() {
+    private void pause() {
+        contentBinding.txtPtNum.setText(++ptNum + "");
+
         isLogging = false;
-
         stopTimer();
-
         rttStopScanning();
         wifiStopScanning();
         bluetoothStopScanning();
         sensorStopScanning();
         lteStopScanning();
+    }
+
+    private void end() {
+        ptNum = 1;
+        contentBinding.txtPtNum.setText(ptNum + "");
+
+        isCreateFile = false;
+        isLogging = false;
+        stopTimer();
+        rttStopScanning();
+        wifiStopScanning();
+        bluetoothStopScanning();
+        sensorStopScanning();
+        lteStopScanning();
+
+        contentBinding.editFileName.setEnabled(true);
+        contentBinding.btnScan.setEnabled(true);
+
+        contentBinding.btnStart.setChecked(false);
     }
 
     private void startTimer() {
@@ -893,32 +996,66 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             public void run() {
                 runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
                     public void run() {
-                        if (accessPointsSupporting80211mcInfo.size() > 0)
-                            rttRangingResultCallback.getMyLocation(new ArrayList(accessPointsSupporting80211mcInfo.values()));
-
                         //체크된 RTT지원 항목만 얻음
                         ArrayList<ScanResult> results = new ArrayList<>();
 
                         RangingRequest rangingRequest;
 
-                        if (useScanCount == 10) {
-                            results = new ArrayList<>(accessPointsSupporting80211mc.values());
+                        if (accessPointsSupporting80211mcInfo.size() > 0) {
+                            rttRangingResultCallback.getMyLocation(new ArrayList(accessPointsSupporting80211mcInfo.values()));
 
-                            rangingRequest = new RangingRequest.Builder().addAccessPoints(results).build();
+                            HashMap<String, Double> map = new HashMap<>();
 
-                            wifiRttManager.startRanging(rangingRequest, getApplication().getMainExecutor(), rttRangingResultCallback);
-
-                        } else {
                             for (Ap ap : apHashMap.values()) {
-                                searchResult.BSSID = ap.getMacAddress();
+                                map.put(ap.getMacAddress(), Calculation.getPoint2PointDistance(myLocation, ap.getPoint()));
+                            }
 
-                                results.add(searchResult);
+                            List<String> keySetList = new ArrayList<>(map.keySet());
+
+                            // 오름차순
+                            Collections.sort(keySetList, (o1, o2) -> (map.get(o1).compareTo(map.get(o2))));
+
+                            int requsetSize = Math.min(apScanCount, keySetList.size());
+
+                            if (useScanCount == 10) {
+                                for (int i = 0; i < requsetSize; i++) {
+                                    results.add(accessPointsSupporting80211mc.get(keySetList.get(i)));
+                                }
+                                rangingRequest = new RangingRequest.Builder().addAccessPoints(results).build();
+                                wifiRttManager.startRanging(rangingRequest, getApplication().getMainExecutor(), rttRangingResultCallback);
+                            } else {
+                                for (int i = 0; i < requsetSize; i++) {
+                                    searchResult.BSSID = keySetList.get(i);
+
+                                    results.add(searchResult);
+
+                                    rangingRequest = new RangingRequest.Builder().addAccessPoints(results).build();
+
+                                    wifiRttManager.startRanging(rangingRequest, getApplication().getMainExecutor(), rttRangingResultCallback);
+
+                                    results.clear();
+                                }
+                            }
+                        } else {
+                            if (useScanCount == 10) {
+                                results = new ArrayList<>(accessPointsSupporting80211mc.values());
 
                                 rangingRequest = new RangingRequest.Builder().addAccessPoints(results).build();
 
                                 wifiRttManager.startRanging(rangingRequest, getApplication().getMainExecutor(), rttRangingResultCallback);
 
-                                results.clear();
+                            } else {
+                                for (Ap ap : apHashMap.values()) {
+                                    searchResult.BSSID = ap.getMacAddress();
+
+                                    results.add(searchResult);
+
+                                    rangingRequest = new RangingRequest.Builder().addAccessPoints(results).build();
+
+                                    wifiRttManager.startRanging(rangingRequest, getApplication().getMainExecutor(), rttRangingResultCallback);
+
+                                    results.clear();
+                                }
                             }
                         }
                     }
@@ -1178,8 +1315,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         public void onReceive(Context context, Intent intent) {
             List<ScanResult> scanResults = wifiManager.getScanResults();
 
-//            Log.d("와이파이 데이터 테스트 태그", scanResults.toString());
-
             //RTT를 지원하지 않는 WIFI 객체 리스트 저장
             findAccessPoints(scanResults);
 
@@ -1187,61 +1322,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             find80211mcSupportedAccessPoints(scanResults);
 
             if (accessPointsSupporting80211mc.size() < useScanCount) {
-                LoadingDialog.updateMessage("AP를 스캔 중입니다... (" + accessPointsSupporting80211mc.size() + "/" + useScanCount + ")");
+//                LoadingDialog.updateMessage("AP를 스캔 중입니다... (" + accessPointsSupporting80211mc.size() + "/" + useScanCount + ")");
                 scanWifi();
             } else {
-                if (LoadingDialog.isShowDialog()) {
-                    String fileName = contentBinding.editFileName.getText().toString();
-
-                    myLocationCsvManager = new CsvManager(fileName + "_MyLocation.csv");
-                    myLocationCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,AP1 MAC,AP1 RANGE,AP2 MAC,AP2 RANGE,AP3 MAC,AP3 RANGE,AP4 MAC,AP4 RANGE,AP5 MAC,AP5 RANGE,AP6 MAC,AP6 RANGE,AP7 MAC,AP7 RANGE,AP8 MAC,AP8 RANGE,AP9 MAC,AP9 RANGE,AP10 MAC,AP10 RANGE,Median (X),Median (Y),DBscan (X),DBscan (Y),Trust (X),Trust (Y)");
-
-                    if (isLoggingWifi) {
-                        wifiCsvManager = new CsvManager(fileName + "_WIFI.csv");
-                        wifiCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,centerFreq0,centerFreq1,channelWidth,frequency,level");
-
-                        wifiStartScanning(rttInterval);
-                    }
-
-                    if (isLoggingRtt) {
-                        rttCsvManager = new CsvManager(fileName + "_RTT.csv");
-                        rttCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,RttStatus,Distance(Mm),DistanceStdDev(Mm),Rssi,timestamp,NumAttemptedMeasurements,NumSuccessfulMeasurements");
-
-                        rttStartScanning(rttInterval);
-                    }
-
-                    if (isLoggingBluetooth) {
-                        bluetoothCsvManager = new CsvManager(fileName + "_Bluetooth.csv");
-                        bluetoothCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,RSSI");
-
-                        bluetoothStartScanning(rttInterval);
-                    }
-
-                    if (isLoggingSensor) {
-                        sensorCsvManager = new CsvManager(fileName + "_Sensor.csv");
-                        sensorCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,acceleration X,acceleration Y,acceleration Z,Geomagnetic X,Geomagnetic Y,Geomagnetic Z,gyro X,gyro Y,gyro Z,Pressure(hPa),Altitude(m),Temperature,Humidity,GPSLatitude,GPSLongitude,GPSAltitude");
-
-                        sensorStartScanning(rttInterval);
-                    }
-
-                    if (isLoggingLte) {
-                        cellIdentityLteCsvManager = new CsvManager(fileName + "_CellIdentityLte.csv");
-                        cellIdentityLteCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,BandWidth,Ci,Earfcn,Mcc,Mnc,NetworkOperator,Pci,Tac");
-                        cellSignalStrengthLteCsvManager = new CsvManager(fileName + "_CellSignalStrengthLte.csv");
-
-                        if (android.os.Build.VERSION.SDK_INT >= 29) {
-                            cellSignalStrengthLteCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssi,Rssnr,TimingAdvance");
-                        } else {
-                            cellSignalStrengthLteCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssnr,TimingAdvance");
-                        }
-
-                        lteStartScanning(rttInterval);
-                    }
-
-                    startTimer();
-                    LoadingDialog.hideDialog();
-                }
-
                 ArrayList<ScanResult> tempList = new ArrayList<>();
 
                 tempList.addAll(accessPointsSupporting80211mc.values());
@@ -1280,8 +1363,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                         wifiCsvManager.Write(writeData);
                 }
             }
-
-//            wifiAdapter.swapData(accessPoints, accessPointsSupporting80211mc, accessPointsSupporting80211mcInfo);
         }
     }
 
@@ -1366,11 +1447,11 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
             //====================================================================================================================================================
             //median 알고리즘을 통해 구한 예비위치를 기반으로 그룹별 신뢰도를 감안하여 최종 위치정보 수집
-            ArrayList<Double> locationTrustXList = new ArrayList<>();
-            ArrayList<Double> locationTrustYList = new ArrayList<>();
+            ArrayList<Double> locationReliabilityXList = new ArrayList<>();
+            ArrayList<Double> locationReliabilityYList = new ArrayList<>();
 
             for (List<RangingResult> each : groupRttList) {
-                double trust = 0;
+                double reliability = 0;
                 int count = 0;
 
                 for (RangingResult rangingResult : each) {
@@ -1379,26 +1460,26 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
                     Ap ap = apHashMap.get(rangingResult.getMacAddress().toString());
                     //거리 정보는 mm단위로 제공되기 때문에 m단위로 변환하여 계산
-                    trust += Math.abs((rangingResult.getDistanceMm() * 1000) - Calculation.getPoint2PointDistance(medianLocation, ap.getPoint()));
+                    reliability += Math.abs((rangingResult.getDistanceMm() * 1000) - Calculation.getPoint2PointDistance(medianLocation, ap.getPoint()));
                     ++count;
                 }
 
-                trust /= count;
+                reliability /= count;
 
-                if (stdTrust >= trust) {
+                if (stdReliability >= reliability) {
                     double[][] myLocation = Calculation.getMyLocation(each, apHashMap);
 
                     if (myLocation != null) {
-                        locationTrustXList.add(myLocation[0][0]);
-                        locationTrustYList.add(myLocation[1][0]);
+                        locationReliabilityXList.add(myLocation[0][0]);
+                        locationReliabilityYList.add(myLocation[1][0]);
                     }
                 }
             }
 
-            Collections.sort(locationTrustXList, ascending);
-            Collections.sort(locationTrustYList, ascending);
+            Collections.sort(locationReliabilityXList, ascending);
+            Collections.sort(locationReliabilityYList, ascending);
 
-            Point trustLocation = new Point(locationXList.get(locationTrustXList.size() / 2), locationYList.get(locationTrustYList.size() / 2));
+            Point reliabilityLocation = new Point(locationXList.get(locationReliabilityXList.size() / 2), locationYList.get(locationReliabilityYList.size() / 2));
             //====================================================================================================================================================
 
             //====================================================================================================================================================
@@ -1450,7 +1531,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             Point dbscanLocation = new Point(dbScanXList.get(dbScanXList.size() / 2), dbScanYList.get(dbScanYList.size() / 2));
             //====================================================================================================================================================
 
-
             switch (useAlgorithm) {
                 case 0:
                     myLocation = medianLocation;
@@ -1459,7 +1539,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                     myLocation = dbscanLocation;
                     break;
                 case 2:
-                    myLocation = trustLocation;
+                    myLocation = reliabilityLocation;
                     break;
             }
 
@@ -1484,15 +1564,16 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             for (int i = list.size() - count; i < 10; i++) {
                 apData += ", ,";
             }
+
             if (myLocationCsvManager != null)
-                myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + apData + medianLocation.getX() + "," + medianLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY() + "," + trustLocation.getX() + "," + trustLocation.getY());
+                myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + apData + medianLocation.getX() + "," + medianLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY() + "," + reliabilityLocation.getX() + "," + reliabilityLocation.getY());
 
             contentBinding.txtTime.setText(DateUtils.getCurrentCsvFileName());
             contentBinding.txtLocation.setText(medianLocation.getX() + "m - " + medianLocation.getY() + "m");
             contentBinding.txtLocation2.setText(dbscanLocation.getX() + "m - " + dbscanLocation.getY() + "m");
-            contentBinding.txtLocation3.setText(trustLocation.getX() + "m - " + trustLocation.getY() + "m");
+            contentBinding.txtLocation3.setText(reliabilityLocation.getX() + "m - " + reliabilityLocation.getY() + "m");
 
-            list.clear();
+//            list.clear();
 //            accessPointsSupporting80211mcInfo.clear();
         }
 

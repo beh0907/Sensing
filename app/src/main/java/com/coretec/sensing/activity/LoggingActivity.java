@@ -16,14 +16,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.GravityCompat;
-import androidx.databinding.DataBindingUtil;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.Fragment;
-
 import com.coretec.sensing.R;
 import com.coretec.sensing.adapter.FragmentAdapter;
 import com.coretec.sensing.databinding.ActivityLoggingBinding;
@@ -33,8 +25,6 @@ import com.coretec.sensing.fragment.BluetoothFragment;
 import com.coretec.sensing.fragment.LteFragment;
 import com.coretec.sensing.fragment.RttFragment;
 import com.coretec.sensing.fragment.SensorFragment;
-import com.coretec.sensing.sqlite.DBDownload;
-import com.coretec.sensing.utils.PrefManager;
 import com.coretec.sensing.utils.TabModel;
 import com.google.android.material.navigation.NavigationView;
 import com.gun0912.tedpermission.PermissionListener;
@@ -44,6 +34,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.databinding.DataBindingUtil;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 import devlight.io.library.ntb.NavigationTabBar;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
@@ -122,7 +119,6 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
         PermissionListener permissionlistener = new PermissionListener() {
             @Override
             public void onPermissionGranted() {
-                downloadDB();
                 init();
                 initFragment();
             }//권한습득 성공
@@ -141,12 +137,6 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
                 .check();//권한습득
     }
 
-    private void downloadDB() {
-        PrefManager pref = new PrefManager(this);
-        if (!pref.isDownloadDB())
-            DBDownload.copyDB(pref, this);
-    }
-
     @SuppressLint("WrongConstant")
     private void init() {
         //데이터 바인딩 초기화
@@ -156,7 +146,7 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
 
         //네비게이션 메뉴 초기화
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, activityBinding.drawerLayout, activityBinding.toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        activityBinding.drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
+        activityBinding.drawerLayout.setDrawerListener(new DrawerLayout.DrawerListener() {
             @Override
             public void onDrawerSlide(View drawerView, float slideOffset) {
             }
@@ -183,7 +173,7 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
 
         contentBinding.btnScan.setOnClickListener(this);
         contentBinding.btnStart.setOnClickListener(this);
-        contentBinding.btnMove.setOnClickListener(this);
+        contentBinding.btnNext.setOnClickListener(this);
         contentBinding.btnEnd.setOnClickListener(this);
         activityBinding.navView.setNavigationItemSelectedListener(this);
 
@@ -233,7 +223,7 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
         FragmentAdapter introAdapter = new FragmentAdapter(getSupportFragmentManager(), listFragment);
 
         contentBinding.viewPagerTab.setAdapter(introAdapter);
-        contentBinding.viewPagerTab.setOffscreenPageLimit(4);
+        contentBinding.viewPagerTab.setOffscreenPageLimit(3);
 
         contentBinding.naviTabBar.setModels(models);
         contentBinding.naviTabBar.setViewPager(contentBinding.viewPagerTab);
@@ -256,12 +246,17 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
 
                 break;
 
-            case R.id.btnMove:
-                if (contentBinding.btnMove.isChecked())
-                    move();
-                else
-                    stop();
+            case R.id.btnNext:
+                int ptNum = Integer.parseInt(contentBinding.editPtnum.getText().toString()) + 1;
+                contentBinding.editPtnum.setText(ptNum + "");
                 break;
+
+//            case R.id.btnMove:
+//                if (contentBinding.btnMove.isChecked())
+//                    move();
+//                else
+//                    stop();
+//                break;
 
             case R.id.btnEnd:
                 end();
@@ -276,12 +271,11 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
         int scanDelay = Integer.parseInt(contentBinding.editScanTime.getText().toString());
         int loggingDelay = Integer.parseInt(contentBinding.editLoggingTime.getText().toString());
 
-//        rttFragment.wifiStartScanning(scanDelay);
-//        rttFragment.rttStartScanning(loggingDelay);
-        rttFragment.findAccessPoints();
+        rttFragment.wifiStartScanning(scanDelay);
+        rttFragment.rttStartScanning(loggingDelay);
         bluetoothFragment.bluetoothStartScanning(loggingDelay);
-        sensorFragment.sensorStartScanning(loggingDelay);
-        lteFragment.lteStartScanning(loggingDelay);
+        sensorFragment.startSensor(loggingDelay);
+        lteFragment.startScanning(loggingDelay);
     }
 
     private void start() {
@@ -322,30 +316,27 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
             rttFragment.rttStopScanning();
             rttFragment.wifiStopScanning();
             bluetoothFragment.bluetoothStopScanning();
-            sensorFragment.sensorStopScanning();
-            lteFragment.lteStopScanning();
+            sensorFragment.stopSensor();
+            lteFragment.stopScanning();
             isScan = false;
         }
 
         rttFragment.wifiStartScanning(scanDelay);
         rttFragment.rttStartScanning(loggingDelay);
         bluetoothFragment.bluetoothStartScanning(loggingDelay);
-        sensorFragment.sensorStartScanning(loggingDelay);
-        lteFragment.lteStartScanning(loggingDelay);
+        sensorFragment.startSensor(loggingDelay);
+        lteFragment.startScanning(loggingDelay);
 
         contentBinding.editFileName.setEnabled(false);
         contentBinding.editBleName.setEnabled(false);
         contentBinding.btnScan.setEnabled(false);
         contentBinding.editPtnum.setEnabled(false);
-        contentBinding.editStatus.setEnabled(false);
 
         isCreateFile = true;
     }
 
     private void pause() {
-
         contentBinding.editPtnum.setEnabled(true);
-        contentBinding.editStatus.setEnabled(true);
 
         int ptNum = Integer.parseInt(contentBinding.editPtnum.getText().toString()) + 1;
         contentBinding.editPtnum.setText(ptNum + "");
@@ -353,44 +344,16 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
         stopScan();
     }
 
-    private void move() {
-
-        contentBinding.editPtnum.setEnabled(false);
-        contentBinding.editStatus.setEnabled(false);
-
-        contentBinding.editStatus.setText("1");
-
-        int loggingDelay = Integer.parseInt(contentBinding.editLoggingTime.getText().toString());
-
-        setLogging(true);
-        startTimer();
-
-        rttFragment.rttStartScanning(loggingDelay);
-        bluetoothFragment.bluetoothStartScanning(loggingDelay);
-        sensorFragment.sensorStartScanning(loggingDelay);
-        lteFragment.lteStartScanning(loggingDelay);
-    }
-
-    private void stop() {
-        contentBinding.editPtnum.setEnabled(true);
-        contentBinding.editStatus.setEnabled(true);
-
-        contentBinding.editStatus.setText("0");
-        stopScan();
-    }
-
     public void end() {
         contentBinding.editPtnum.setEnabled(true);
-        contentBinding.editStatus.setEnabled(true);
 
         isCreateFile = false;
         isScan = false;
         contentBinding.editPtnum.setText("0");
-        contentBinding.editStatus.setText("0");
         contentBinding.btnStart.setText("START");
-        contentBinding.btnMove.setText("MOVE");
         contentBinding.btnStart.setChecked(false);
-        contentBinding.btnMove.setChecked(false);
+//        contentBinding.btnMove.setText("MOVE");
+//        contentBinding.btnMove.setChecked(false);
 
         contentBinding.editFileName.setEnabled(true);
         contentBinding.editBleName.setEnabled(true);
@@ -406,11 +369,11 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
             rttFragment.wifiStopScanning();
             rttFragment.rttStopScanning();
             bluetoothFragment.bluetoothStopScanning();
-            sensorFragment.sensorStopScanning();
-            lteFragment.lteStopScanning();
+            sensorFragment.stopSensor();
         } catch (Exception e) {
 
         }
+
     }
 
     private void startTimer() {
@@ -431,10 +394,6 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
         return Integer.parseInt(contentBinding.editPtnum.getText().toString());
     }
 
-    public int getStatus() {
-        return Integer.parseInt(contentBinding.editStatus.getText().toString());
-    }
-
     public String[] getBleFilterBssid() {
         return contentBinding.editBleName.getText().toString().split(",");
     }
@@ -452,7 +411,7 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Toast.makeText(this, "스캔 기능을 사용하기 위해 GPS 기능을 On시켜 주시기 바랍니다.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "스캔 기능을 사용하기 위해 GPS 기능을 On시켜 주시기 바랍니다.", 500).show();
 
             // GPS 설정 화면으로 이동
             Intent gpsOptionsIntent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
