@@ -35,16 +35,27 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.NumberPicker;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.databinding.DataBindingUtil;
+import androidx.drawerlayout.widget.DrawerLayout;
+
 import com.coretec.sensing.R;
 import com.coretec.sensing.databinding.ActivityMapBinding;
 import com.coretec.sensing.databinding.ContentMapBinding;
 import com.coretec.sensing.dialog.AlarmDialog;
+import com.coretec.sensing.dialog.LoadingDialog;
 import com.coretec.sensing.listener.OnTouchMapListener;
 import com.coretec.sensing.model.Ap;
 import com.coretec.sensing.model.Link;
@@ -66,7 +77,6 @@ import com.coretec.sensing.utils.Sensor;
 import com.coretec.sensing.utils.Sort;
 import com.coretec.sensing.view.MoveImageView;
 import com.github.dakusui.combinatoradix.Combinator;
-import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.navigation.NavigationView;
 import com.gun0912.tedpermission.PermissionListener;
 import com.gun0912.tedpermission.TedPermission;
@@ -81,14 +91,6 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.GravityCompat;
-import androidx.databinding.DataBindingUtil;
-import androidx.drawerlayout.widget.DrawerLayout;
 import lombok.SneakyThrows;
 import no.wtw.android.dijkstra.DijkstraAlgorithm;
 import no.wtw.android.dijkstra.model.Edge;
@@ -338,28 +340,42 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         final RadioButton radioTen = dialogView.findViewById(R.id.radioTen);
         final NumberPicker pickerCombination = dialogView.findViewById(R.id.pickerCombination);
         final NumberPicker pickerFilter = dialogView.findViewById(R.id.pickerFilter);
-        final EditText editRttInterval = dialogView.findViewById(R.id.editRttInterval);
         final EditText editRadius = dialogView.findViewById(R.id.editRadius);
         final EditText editApCount = dialogView.findViewById(R.id.editApCount);
         final EditText editReliability = dialogView.findViewById(R.id.editReliability);
 
         pickerCombination.setMinValue(1);
         pickerCombination.setMaxValue(10);
-        pickerCombination.setValue(4);
+        pickerCombination.setValue(combination);
         pickerCombination.setWrapSelectorWheel(false);
         pickerCombination.setOnLongPressUpdateInterval(100);
 
         pickerFilter.setMinValue(1);
         pickerFilter.setMaxValue(100);
-        pickerFilter.setValue(4);
+        pickerFilter.setValue(dbScanFilter);
         pickerFilter.setWrapSelectorWheel(false);
         pickerFilter.setOnLongPressUpdateInterval(100);
-
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle("알고리즘 설정");
         builder.setView(dialogView);
         builder.setCancelable(false);
+
+        editRadius.setText(dbScanDistance + "");
+        editApCount.setText(apScanCount + "");
+        editReliability.setText(stdReliability + "");
+
+        if (useScanCount == 1)
+            radioOne.setChecked(true);
+        else
+            radioTen.setChecked(true);
+
+        if (useAlgorithm == 0)
+            radioMedian.setChecked(true);
+        else if (useAlgorithm == 1)
+            radioDbScan.setChecked(true);
+        else
+            radioReliability.setChecked(true);
 
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
@@ -387,9 +403,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 apScanCount = Integer.parseInt(editApCount.getText().toString());
 
                 //RTT 통신 주기(ms) 500 or 1000ms
-                rttInterval = Integer.parseInt(editRttInterval.getText().toString());
-
-                //RTT 통신 주기(ms) 500 or 1000ms
                 stdReliability = Double.parseDouble(editReliability.getText().toString());
 
                 dialog.cancel();
@@ -411,17 +424,29 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
         View dialogView = activity.getLayoutInflater().inflate(R.layout.dialog_logging, null);
 
-        final MaterialCheckBox checkWifi = dialogView.findViewById(R.id.checkWifi);
-        final MaterialCheckBox checkRtt = dialogView.findViewById(R.id.checkRtt);
-        final MaterialCheckBox checkBluetooth = dialogView.findViewById(R.id.checkBluetooth);
-        final MaterialCheckBox checkSensor = dialogView.findViewById(R.id.checkSensor);
-        final MaterialCheckBox checkLte = dialogView.findViewById(R.id.checkLte);
+        final CheckBox checkWifi = dialogView.findViewById(R.id.checkWifi);
+        final CheckBox checkRtt = dialogView.findViewById(R.id.checkRtt);
+        final CheckBox checkBluetooth = dialogView.findViewById(R.id.checkBluetooth);
+        final CheckBox checkSensor = dialogView.findViewById(R.id.checkSensor);
+        final CheckBox checkLte = dialogView.findViewById(R.id.checkLte);
 
         final EditText editWifiInterval = dialogView.findViewById(R.id.editWifiInterval);
         final EditText editRttInterval = dialogView.findViewById(R.id.editRttInterval);
         final EditText editBluetoothInterval = dialogView.findViewById(R.id.editBluetoothInterval);
         final EditText editSensorInterval = dialogView.findViewById(R.id.editSensorInterval);
         final EditText editLteInterval = dialogView.findViewById(R.id.editLteInterval);
+
+        checkWifi.setChecked(isLoggingWifi);
+        checkRtt.setChecked(isLoggingRtt);
+        checkBluetooth.setChecked(isLoggingBluetooth);
+        checkSensor.setChecked(isLoggingSensor);
+        checkLte.setChecked(isLoggingLte);
+
+        editWifiInterval.setText(wifiInterval + "");
+        editRttInterval.setText(rttInterval + "");
+        editBluetoothInterval.setText(blueToothInterval + "");
+        editSensorInterval.setText(sensorInterval + "");
+        editLteInterval.setText(lteInterval + "");
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle("로깅 설정");
@@ -495,7 +520,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 initPath();
                 loadMapImage();
                 setBackgroundPosition();
-
 
                 int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
                 int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
@@ -845,6 +869,13 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     private void start() {
+        if (searchResult == null) {
+            AlarmDialog.showDialog(this, "스캔 버튼을 눌러 1개 이상의 RTT 지원 AP를 찾아주세요.");
+            contentBinding.btnStart.setChecked(false);
+            return;
+        }
+
+
         if (!isCreateFile) {
             String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + File.separator;
             String fileName = contentBinding.editFileName.getText().toString();
@@ -907,7 +938,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
         isCreateFile = true;
         isLogging = true;
-//        LoadingDialog.showDialog(MapActivity.this, "AP를 스캔 중입니다... (" + accessPointsSupporting80211mc.size() + "/" + useScanCount + ")");
 
         contentBinding.editFileName.setEnabled(false);
         contentBinding.btnScan.setEnabled(false);
@@ -995,25 +1025,28 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         rttTimer = new TimerTask() {
             public void run() {
                 runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
+                    @SuppressLint("MissingPermission")
                     public void run() {
                         //체크된 RTT지원 항목만 얻음
                         ArrayList<ScanResult> results = new ArrayList<>();
-
                         RangingRequest rangingRequest;
 
-                        if (accessPointsSupporting80211mcInfo.size() > 0) {
-                            rttRangingResultCallback.getMyLocation(new ArrayList(accessPointsSupporting80211mcInfo.values()));
+                        HashMap<String, RangingResult> rawResultMaP = new HashMap<>(accessPointsSupporting80211mcInfo);
+                        accessPointsSupporting80211mcInfo.clear();
 
-                            HashMap<String, Double> map = new HashMap<>();
+                        if (rawResultMaP.size() > 0) {
+                            rttRangingResultCallback.getMyLocation(new ArrayList(rawResultMaP.values()));
+
+                            HashMap<String, Double> distanceMap = new HashMap<>();
 
                             for (Ap ap : apHashMap.values()) {
-                                map.put(ap.getMacAddress(), Calculation.getPoint2PointDistance(myLocation, ap.getPoint()));
+                                distanceMap.put(ap.getMacAddress(), Calculation.getPoint2PointDistance(myLocation, ap.getPoint()));
                             }
 
-                            List<String> keySetList = new ArrayList<>(map.keySet());
+                            List<String> keySetList = new ArrayList<>(distanceMap.keySet());
 
                             // 오름차순
-                            Collections.sort(keySetList, (o1, o2) -> (map.get(o1).compareTo(map.get(o2))));
+                            Collections.sort(keySetList, (o1, o2) -> (distanceMap.get(o1).compareTo(distanceMap.get(o2))));
 
                             int requsetSize = Math.min(apScanCount, keySetList.size());
 
@@ -1058,6 +1091,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                                 }
                             }
                         }
+
+                        rawResultMaP.clear();
                     }
                 });
             }
@@ -1259,6 +1294,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
     public void scanWifi() {
         wifiManager.startScan();
+
+        if (!isLogging)
+            LoadingDialog.showDialog(MapActivity.this, "AP를 스캔 중입니다...");
     }
 
     private void findAccessPoints(@NonNull List<ScanResult> originalList) {
@@ -1313,6 +1351,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         // This is checked via mLocationPermissionApproved boolean
         @SuppressLint("MissingPermission")
         public void onReceive(Context context, Intent intent) {
+            LoadingDialog.hideDialog();
+
             List<ScanResult> scanResults = wifiManager.getScanResults();
 
             //RTT를 지원하지 않는 WIFI 객체 리스트 저장
@@ -1382,27 +1422,32 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 Rtt rtt = buffer.get(key);
                 String data = "";
 
+                data += dateTime;
+                data += "," + contentBinding.timerRanging.getTimeElapsed();
+                data += "," + ptNum;
+                data += "," + "-";
+
+                //와이파이 스캔 시 해당 기기가 스캔되지 않았을 경우 RTT값을 가져올 수 없어 빈 값을 넣음
                 if (rtt != null) {
-                    data += dateTime;
-                    data += "," + contentBinding.timerRanging.getTimeElapsed();
-                    data += "," + ptNum;
-                    data += "," + "-";
                     data += "," + rtt.getSsid();
-                    data += "," + rtt.getBssid();
-                    data += "," + rangingResult.getStatus();
-
-                    if (rangingResult.getStatus() == RangingResult.STATUS_SUCCESS) {
-                        data += "," + rangingResult.getDistanceMm();
-                        data += "," + rangingResult.getDistanceStdDevMm();
-                        data += "," + rangingResult.getRssi();
-                        data += "," + rangingResult.getRangingTimestampMillis();
-                        data += "," + rangingResult.getNumAttemptedMeasurements();
-                        data += "," + rangingResult.getNumSuccessfulMeasurements();
-                    }
-
-                    if (rttCsvManager != null)
-                        rttCsvManager.Write(data);
+                } else {
+                    data += "," + "-";
                 }
+
+                data += "," + key;
+                data += "," + rangingResult.getStatus();
+
+                if (rangingResult.getStatus() == RangingResult.STATUS_SUCCESS) {
+                    data += "," + rangingResult.getDistanceMm();
+                    data += "," + rangingResult.getDistanceStdDevMm();
+                    data += "," + rangingResult.getRssi();
+                    data += "," + rangingResult.getRangingTimestampMillis();
+                    data += "," + rangingResult.getNumAttemptedMeasurements();
+                    data += "," + rangingResult.getNumSuccessfulMeasurements();
+                }
+
+                if (rttCsvManager != null)
+                    rttCsvManager.Write(data);
 
                 accessPointsSupporting80211mcInfo.put(rangingResult.getMacAddress().toString(), rangingResult);
             }
@@ -1412,6 +1457,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             ArrayList<Double> locationXList = new ArrayList<>();
             ArrayList<Double> locationYList = new ArrayList<>();
 
+            //오름차순
             Sort.Ascending ascending = new Sort.Ascending();
 
             if (list.size() < combination) {
@@ -1460,7 +1506,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
                     Ap ap = apHashMap.get(rangingResult.getMacAddress().toString());
                     //거리 정보는 mm단위로 제공되기 때문에 m단위로 변환하여 계산
-                    reliability += Math.abs((rangingResult.getDistanceMm() * 1000) - Calculation.getPoint2PointDistance(medianLocation, ap.getPoint()));
+                    reliability += Math.abs((rangingResult.getDistanceMm() / 1000f) - Calculation.getPoint2PointDistance(medianLocation, ap.getPoint()));
                     ++count;
                 }
 
@@ -1479,7 +1525,10 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             Collections.sort(locationReliabilityXList, ascending);
             Collections.sort(locationReliabilityYList, ascending);
 
-            Point reliabilityLocation = new Point(locationXList.get(locationReliabilityXList.size() / 2), locationYList.get(locationReliabilityYList.size() / 2));
+            Point reliabilityLocation = new Point();
+
+            if (locationReliabilityXList.size() > 0)
+                reliabilityLocation = new Point(locationReliabilityXList.get(locationReliabilityXList.size() / 2), locationReliabilityYList.get(locationReliabilityYList.size() / 2));
             //====================================================================================================================================================
 
             //====================================================================================================================================================
@@ -1520,15 +1569,13 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 }
             }
 
-            if (dbScanXList.size() == 0 || dbScanYList.size() == 0) {
-                if (myLocationCsvManager != null)
-                    myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + ",=에러=");
-                return;
-            }
+            Point dbscanLocation = new Point();
 
             Collections.sort(dbScanXList, ascending);
             Collections.sort(dbScanXList, ascending);
-            Point dbscanLocation = new Point(dbScanXList.get(dbScanXList.size() / 2), dbScanYList.get(dbScanYList.size() / 2));
+
+            if (dbScanXList.size() > 0 && dbScanYList.size() > 0)
+                dbscanLocation = new Point(dbScanXList.get(dbScanXList.size() / 2), dbScanYList.get(dbScanYList.size() / 2));
             //====================================================================================================================================================
 
             switch (useAlgorithm) {

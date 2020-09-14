@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2018 Google Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.coretec.sensing.adapter;
 
 import android.net.wifi.ScanResult;
@@ -20,13 +35,13 @@ public class WifiAdapter extends RecyclerView.Adapter<WifiAdapter.ViewHolder> {
 
     private ArrayList<ScanResult> wifiAccessPoints;
     private ArrayList<ScanResult> wifiAccessPointsWithRtt;
-
     private HashMap<String, RangingResult> wifiAccessPointsWithRttInfo;
+
     private HashMap<String, Boolean> unCheckedMap;
 
-    public WifiAdapter(ArrayList<ScanResult> wifiAccessPoints, HashMap<String, ScanResult> wifiAccessPointsWithRtt) {
+    public WifiAdapter(ArrayList<ScanResult> wifiAccessPoints, ArrayList<ScanResult> wifiAccessPointsWithRtt) {
         this.wifiAccessPoints = wifiAccessPoints;
-        this.wifiAccessPointsWithRtt = new ArrayList<>(wifiAccessPointsWithRtt.values());
+        this.wifiAccessPointsWithRtt = wifiAccessPointsWithRtt;
         wifiAccessPointsWithRttInfo = new HashMap<>();
 
         unCheckedMap = new HashMap<>();
@@ -46,9 +61,9 @@ public class WifiAdapter extends RecyclerView.Adapter<WifiAdapter.ViewHolder> {
         return temp;
     }
 
-    public void swapData(ArrayList<ScanResult> wifiAccessPoints, HashMap<String, ScanResult> wifiAccessPointsWithRtt, HashMap<String, RangingResult> wifiAccessPointsWithRttInfo) {
+    public void swapData(ArrayList<ScanResult> wifiAccessPoints, ArrayList<ScanResult> wifiAccessPointsWithRtt, HashMap<String, RangingResult> wifiAccessPointsWithRttInfo) {
         this.wifiAccessPoints = wifiAccessPoints;
-        this.wifiAccessPointsWithRtt = new ArrayList(wifiAccessPointsWithRtt.values());
+        this.wifiAccessPointsWithRtt = wifiAccessPointsWithRtt;
         this.wifiAccessPointsWithRttInfo = wifiAccessPointsWithRttInfo;
 
         notifyDataSetChanged();

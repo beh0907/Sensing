@@ -19,6 +19,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.databinding.DataBindingUtil;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.coretec.sensing.R;
 import com.coretec.sensing.activity.LoggingActivity;
 import com.coretec.sensing.adapter.WifiAdapter;
@@ -32,15 +38,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import androidx.annotation.NonNull;
-import androidx.databinding.DataBindingUtil;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class RttFragment extends Fragment {
     final Handler rttRequestDelayer = new Handler();
@@ -231,7 +230,7 @@ public class RttFragment extends Fragment {
     private void wifiScanDelayRequest() {
         wifiTimer = new TimerTask() {
             public void run() {
-                Objects.requireNonNull(getActivity()).runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
+                requireActivity().runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
                     @SuppressLint("DefaultLocale")
                     public void run() {
                         if (wifiScanning) {
@@ -251,7 +250,7 @@ public class RttFragment extends Fragment {
     private void rttScanDelayRequest() {
         rttTimer = new TimerTask() {
             public void run() {
-                Objects.requireNonNull(getActivity()).runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
+                requireActivity().runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
                     @SuppressLint("DefaultLocale")
                     public void run() {
                         if (rttScanning) {
@@ -267,6 +266,7 @@ public class RttFragment extends Fragment {
         timer.schedule(rttTimer, 0, rttScanMillisecondDelay);
     }
 
+    @SuppressLint("MissingPermission")
     private void startRangingRequest() {
         if (!getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT))
             return;

@@ -194,7 +194,7 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:inputType="numberDecimal"
-            android:text="0.5" />
+            android:text="2.5" />
     </LinearLayout>
 
     <View
