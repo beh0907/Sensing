@@ -142,7 +142,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     //RTT 조회 시 일괄로 요청하는 객체 개수
     private int useScanCount = 1;
     //RTT 요청 시 총 요청 객체 개수
-    private int apScanCount = 10;
+    private int apScanCount = 15;
     //DBSCAN 사용 시 반영되는 반지름 거리(m)
     private double dbScanDistance = 0.5f;
     //조합 개수 기준
@@ -948,11 +948,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
         isLogging = false;
         stopTimer();
-        rttStopScanning();
-        wifiStopScanning();
-        bluetoothStopScanning();
-        sensorStopScanning();
-        lteStopScanning();
+        stopScanning();
     }
 
     private void end() {
@@ -962,11 +958,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         isCreateFile = false;
         isLogging = false;
         stopTimer();
-        rttStopScanning();
-        wifiStopScanning();
-        bluetoothStopScanning();
-        sensorStopScanning();
-        lteStopScanning();
+        stopScanning();
+        stopLogging();
 
         contentBinding.editFileName.setEnabled(true);
         contentBinding.btnScan.setEnabled(true);
@@ -1032,16 +1025,15 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                         RangingRequest rangingRequest;
 
                         HashMap<String, RangingResult> rawResultMaP = new HashMap<>(accessPointsSupporting80211mcInfo);
-                        accessPointsSupporting80211mcInfo.clear();
+//                        accessPointsSupporting80211mcInfo.clear();
 
                         if (rawResultMaP.size() > 0) {
                             rttRangingResultCallback.getMyLocation(new ArrayList(rawResultMaP.values()));
 
                             HashMap<String, Double> distanceMap = new HashMap<>();
 
-                            for (Ap ap : apHashMap.values()) {
+                            for (Ap ap : apHashMap.values())
                                 distanceMap.put(ap.getMacAddress(), Calculation.getPoint2PointDistance(myLocation, ap.getPoint()));
-                            }
 
                             List<String> keySetList = new ArrayList<>(distanceMap.keySet());
 
@@ -1071,11 +1063,16 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                             }
                         } else {
                             if (useScanCount == 10) {
-                                results = new ArrayList<>(accessPointsSupporting80211mc.values());
+                                for (ScanResult scanResult : accessPointsSupporting80211mc.values()) {
+                                    results.add(scanResult);
 
-                                rangingRequest = new RangingRequest.Builder().addAccessPoints(results).build();
+                                    if (results.size() == RangingRequest.getMaxPeers()) {
+                                        rangingRequest = new RangingRequest.Builder().addAccessPoints(results).build();
+                                        wifiRttManager.startRanging(rangingRequest, getApplication().getMainExecutor(), rttRangingResultCallback);
 
-                                wifiRttManager.startRanging(rangingRequest, getApplication().getMainExecutor(), rttRangingResultCallback);
+                                        results.clear();
+                                    }
+                                }
 
                             } else {
                                 for (Ap ap : apHashMap.values()) {
@@ -1091,8 +1088,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                                 }
                             }
                         }
-
-                        rawResultMaP.clear();
                     }
                 });
             }
@@ -1218,22 +1213,40 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         timer.schedule(lteTimer, 0, delay);
     }
 
-    public void wifiStopScanning() {
+    public void stopScanning() {
         if (wifiTimer != null) {
             wifiTimer.cancel();
             wifiTimer = null;
         }
 
-        if (wifiCsvManager != null) {
-            wifiCsvManager.close();
-            wifiCsvManager = null;
-        }
-    }
-
-    public void rttStopScanning() {
         if (rttTimer != null) {
             rttTimer.cancel();
             rttTimer = null;
+        }
+
+        if (bluetoothTimer != null) {
+            bluetoothLeScanner.stopScan(leScanCallback);
+            bluetoothTimer.cancel();
+            bluetoothTimer = null;
+        }
+
+        if (sensor.isStart()) {
+            gpsTracker.stop();
+            sensor.stop();
+            sensorTimer.cancel();
+            sensorTimer = null;
+        }
+
+        if (lteTimer != null) {
+            lteTimer.cancel();
+            lteTimer = null;
+        }
+    }
+
+    public void stopLogging() {
+        if (wifiCsvManager != null) {
+            wifiCsvManager.close();
+            wifiCsvManager = null;
         }
 
         if (rttCsvManager != null) {
@@ -1245,39 +1258,15 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             myLocationCsvManager.close();
             myLocationCsvManager = null;
         }
-    }
-
-    public void bluetoothStopScanning() {
-        if (bluetoothTimer != null) {
-            bluetoothLeScanner.stopScan(leScanCallback);
-            bluetoothTimer.cancel();
-            bluetoothTimer = null;
-        }
 
         if (bluetoothCsvManager != null) {
             bluetoothCsvManager.close();
             bluetoothCsvManager = null;
         }
-    }
-
-    public void sensorStopScanning() {
-        if (sensor.isStart()) {
-            gpsTracker.stop();
-            sensor.stop();
-            sensorTimer.cancel();
-            sensorTimer = null;
-        }
 
         if (sensorCsvManager != null) {
             sensorCsvManager.close();
             sensorCsvManager = null;
-        }
-    }
-
-    public void lteStopScanning() {
-        if (lteTimer != null) {
-            lteTimer.cancel();
-            lteTimer = null;
         }
 
         if (cellIdentityLteCsvManager != null) {
@@ -1339,6 +1328,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             // 내림차순
             ArrayList<String> keySetList = new ArrayList<String>(distanceList.keySet());
             Collections.sort(keySetList, (o1, o2) -> (distanceList.get(o2).compareTo(distanceList.get(o1))));
+
 
             //내림차순 후
             for (int i = accessPointsSupporting80211mc.size() - 1; i >= RangingRequest.getMaxPeers(); i--) {
@@ -1431,7 +1421,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 if (rtt != null) {
                     data += "," + rtt.getSsid();
                 } else {
-                    data += "," + "-";
+                    data += "," + apHashMap.get(key).getName();
                 }
 
                 data += "," + key;
@@ -1463,6 +1453,32 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             if (list.size() < combination) {
                 list.clear();
                 return;
+            }
+
+            HashMap<String, Integer> distanceMap = new HashMap<>();
+
+            for (int i = list.size() - 1; i >= 0; i--) {
+                RangingResult rangingResult = list.get(i);
+
+                if (rangingResult.getStatus() == RangingResult.STATUS_SUCCESS)
+                    distanceMap.put(rangingResult.getMacAddress().toString(), rangingResult.getDistanceMm());
+                else
+                    list.remove(rangingResult);
+            }
+
+            List<String> keySetList = new ArrayList<>(distanceMap.keySet());
+
+            // 오름차순
+            Collections.sort(keySetList, (o1, o2) -> (distanceMap.get(o1).compareTo(distanceMap.get(o2))));
+
+            int requsetSize = Math.min(10, keySetList.size());
+            for (int i = requsetSize; i < keySetList.size(); i++) {
+                for (RangingResult rangingResult : list) {
+                    if (keySetList.get(i).equals(rangingResult.getMacAddress().toString())) {
+                        list.remove(rangingResult);
+                        break;
+                    }
+                }
             }
 
             Combinator<RangingResult> groupRttList = new Combinator<>(list, combination);

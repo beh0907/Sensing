@@ -73,7 +73,7 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:inputType="numberDecimal"
-            android:text="10" />
+            android:text="15" />
     </LinearLayout>
 
     <View
