@@ -27,12 +27,9 @@ import com.coretec.sensing.fragment.RttFragment;
 import com.coretec.sensing.fragment.SensorFragment;
 import com.coretec.sensing.utils.TabModel;
 import com.google.android.material.navigation.NavigationView;
-import com.gun0912.tedpermission.PermissionListener;
-import com.gun0912.tedpermission.TedPermission;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -42,12 +39,6 @@ import androidx.databinding.DataBindingUtil;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import devlight.io.library.ntb.NavigationTabBar;
-
-import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
-import static android.Manifest.permission.ACCESS_FINE_LOCATION;
-import static android.Manifest.permission.BLUETOOTH;
-import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
-import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
 public class LoggingActivity extends AppCompatActivity implements View.OnClickListener, NavigationView.OnNavigationItemSelectedListener {
 
@@ -90,6 +81,7 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
             case R.id.nav_map:
                 Intent bookmark = new Intent(this, MapActivity.class);
                 startActivity(bookmark);
+                finish();
                 return false;
         }
         return true;
@@ -115,26 +107,14 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        init();
+        initFragment();
+    }
 
-        PermissionListener permissionlistener = new PermissionListener() {
-            @Override
-            public void onPermissionGranted() {
-                init();
-                initFragment();
-            }//권한습득 성공
-
-            @Override
-            public void onPermissionDenied(List<String> deniedPermissions) {
-                finish();
-            }
-        };
-
-        TedPermission.with(this)
-                .setPermissionListener(permissionlistener)
-                .setRationaleMessage("앱을 사용하기 위해 권한설정이 필요합니다.")
-                .setDeniedMessage("앱 사용을 위해 권한을 설정해주세요.\n[설정] > [권한] 에서 권한을 허용할 수 있습니다.")
-                .setPermissions(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, BLUETOOTH)
-                .check();//권한습득
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        end();
     }
 
     @SuppressLint("WrongConstant")
@@ -358,6 +338,11 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
         contentBinding.editFileName.setEnabled(true);
         contentBinding.editBleName.setEnabled(true);
         contentBinding.btnScan.setEnabled(true);
+
+        rttFragment.csvClose();
+        bluetoothFragment.csvClose();
+        sensorFragment.csvClose();
+        lteFragment.csvClose();
 
         stopScan();
     }

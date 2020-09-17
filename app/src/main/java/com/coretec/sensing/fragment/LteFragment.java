@@ -19,7 +19,6 @@ import com.coretec.sensing.utils.CsvManager;
 import com.coretec.sensing.utils.DateUtils;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -80,9 +79,9 @@ public class LteFragment extends Fragment {
         csvCellSignalStrengthLteManager = new CsvManager(fileName + "_CellSignalStrengthLte.csv");
 
         if (android.os.Build.VERSION.SDK_INT >= 29) {
-            csvCellSignalStrengthLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssi,Rssnr,TimingAdvance");
+            csvCellSignalStrengthLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssi,Rssnr,TimingAdvance");
         } else {
-            csvCellSignalStrengthLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssnr,TimingAdvance");
+            csvCellSignalStrengthLteManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssnr,TimingAdvance");
         }
 
     }
@@ -102,7 +101,7 @@ public class LteFragment extends Fragment {
                 int ptNum = loggingActivity.getPtNum();
 
 
-                Objects.requireNonNull(getActivity()).runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
+                requireActivity().runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
                     public void run() {
 
                         if (isLogging && csvCellIdentityLteManager != null && csvCellSignalStrengthLteManager != null) {
@@ -156,6 +155,18 @@ public class LteFragment extends Fragment {
         if (lteTimer != null) {
             lteTimer.cancel();
             lteTimer = null;
+        }
+    }
+
+    public void csvClose() {
+        if (csvCellIdentityLteManager != null) {
+            csvCellIdentityLteManager.close();
+            csvCellIdentityLteManager = null;
+        }
+
+        if (csvCellSignalStrengthLteManager != null) {
+            csvCellSignalStrengthLteManager.close();
+            csvCellSignalStrengthLteManager = null;
         }
     }
 }

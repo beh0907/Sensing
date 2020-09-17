@@ -25,7 +25,7 @@ android {
 
     signingConfigs {
         release {
-            storeFile file('C:/Users/PIH/Desktop/Android ProJect/ProJect Keystore/sensing.jks')
+            storeFile file('C:\\Users\\qkrdl\\Desktop\\Sensing\\gradle\\sensing.jks')
             // 기준은 App 폴더 기준이다.
             storePassword "core4211"
             keyAlias "sensing"

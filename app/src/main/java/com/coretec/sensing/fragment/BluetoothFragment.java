@@ -6,8 +6,10 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,7 +26,6 @@ import com.coretec.sensing.utils.DateUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -40,7 +41,7 @@ public class BluetoothFragment extends Fragment {
     private ArrayList<Bluetooth> bluetoothArrayList;
     private BluetoothListAdapter bluetoothListAdapter;
     private HashMap<String, ScanResult> bluetoothListHashMap;
-    private HashMap<String, ScanResult> bluetoothLoggingHashMap;
+//    private HashMap<String, ScanResult> bluetoothLoggingHashMap;
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothLeScanner bluetoothLeScanner;
@@ -89,7 +90,7 @@ public class BluetoothFragment extends Fragment {
     private void initList() {
         bluetoothArrayList = new ArrayList<>();
         bluetoothListHashMap = new HashMap<>();
-        bluetoothLoggingHashMap = new HashMap<>();
+//        bluetoothLoggingHashMap = new HashMap<>();
 
         bluetoothListAdapter = new BluetoothListAdapter(bluetoothArrayList, new RecyclerViewClickListener() {
             @Override
@@ -105,7 +106,7 @@ public class BluetoothFragment extends Fragment {
     }
 
     private void initBluetooth() {
-        bluetoothManager = (BluetoothManager) getContext().getSystemService(Context.BLUETOOTH_SERVICE);
+        bluetoothManager = (BluetoothManager) getActivity().getSystemService(Context.BLUETOOTH_SERVICE);
         bluetoothAdapter = bluetoothManager.getAdapter();
         bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
 
@@ -113,6 +114,8 @@ public class BluetoothFragment extends Fragment {
             @Override
             public void onScanResult(int callbackType, ScanResult result) {
                 super.onScanResult(callbackType, result);
+                Log.d("데이터 확인", result.toString());
+
                 String address = result.getDevice().getAddress();
 
                 if (address == null) {
@@ -122,7 +125,12 @@ public class BluetoothFragment extends Fragment {
                 for (String filterAddress : bluetoothFilterBssid) {
                     if (address.startsWith(filterAddress)) {
                         bluetoothListHashMap.put(result.getDevice().getAddress(), result);
-                        bluetoothLoggingHashMap.put(result.getDevice().getAddress(), result);
+
+                        if (isLogging && csvManager != null)
+                            csvManager.Write(DateUtils.getTimeStampToDateTime(result.getTimestampNanos()) + "," + loggingActivity.getRuntime() + "," + loggingActivity.getPtNum() + "," + result.getDevice().getName() + "," + result.getDevice().getAddress() + "," + result.getRssi());
+
+                        refreshBluetoothList(result);
+//                        bluetoothLoggingHashMap.put(result.getDevice().getAddress(), result);
                     }
                 }
             }
@@ -130,6 +138,7 @@ public class BluetoothFragment extends Fragment {
             @Override
             public void onBatchScanResults(List<ScanResult> results) {
                 super.onBatchScanResults(results);
+                Log.d("데이터 확인 리스트", results.toString());
             }
 
             @Override
@@ -146,15 +155,14 @@ public class BluetoothFragment extends Fragment {
     public void setBluetoothFilterBssid(String[] bluetoothFilterBssid) {
         this.bluetoothFilterBssid = bluetoothFilterBssid;
         bluetoothListHashMap.clear();
-        bluetoothLoggingHashMap.clear();
-        refreshBluetoothList();
+//        bluetoothLoggingHashMap.clear();
+        refreshBluetoothList(null);
     }
 
-    private void refreshBluetoothList() {
+    private void refreshBluetoothList(ScanResult refreshResult) {
         if (bluetoothArrayList.size() != 0) {
             bluetoothArrayList.clear();
         }
-
 
 //        long runTime = loggingActivity.getRuntime();
 //        int ptNum = loggingActivity.getPtNum();
@@ -174,19 +182,7 @@ public class BluetoothFragment extends Fragment {
             Bluetooth bluetooth = new Bluetooth(currentTime, result.getDevice().getName(), result.getDevice().getAddress(), String.valueOf(result.getRssi()));
             bluetoothArrayList.add(bluetooth);
         }
-
-        long runTime = loggingActivity.getRuntime();
-        int ptNum = loggingActivity.getPtNum();
-
-        for (ScanResult result : bluetoothLoggingHashMap.values()) {
-            currentTime = DateUtils.getTimeStampToDateTime(result.getTimestampNanos());
-
-            if (isLogging && csvManager != null)
-                csvManager.Write(currentTime + "," + runTime + "," + ptNum + "," + result.getDevice().getName() + "," + result.getDevice().getAddress() + "," + result.getRssi());
-        }
-
-        bluetoothLoggingHashMap.clear();
-        bluetoothListAdapter.refreshList(bluetoothArrayList);
+        bluetoothListAdapter.refreshList(bluetoothArrayList, refreshResult);
     }
 
     public void createCsvFile(String fileName) {
@@ -197,15 +193,20 @@ public class BluetoothFragment extends Fragment {
     public void bluetoothStartScanning(int delay) {
         bluetoothStopScanning();
 
-        bluetoothLeScanner.startScan(leScanCallback);
+        ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(
+                ScanSettings.SCAN_MODE_LOW_POWER)
+                .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+                .build();
+
+        bluetoothLeScanner.startScan(null, scanSettings, leScanCallback);
 
         bluetoothTimer = new TimerTask() {
             public void run() {
-                Objects.requireNonNull(getActivity()).runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
+                requireActivity().runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
                     @SuppressLint("DefaultLocale")
                     public void run() {
                         bluetoothFilterBssid = loggingActivity.getBleFilterBssid();
-                        refreshBluetoothList();
+//                        refreshBluetoothList();
                     }
                 });
             }
@@ -221,6 +222,13 @@ public class BluetoothFragment extends Fragment {
             bluetoothLeScanner.stopScan(leScanCallback);
             bluetoothTimer.cancel();
             bluetoothTimer = null;
+        }
+    }
+
+    public void csvClose() {
+        if (csvManager != null) {
+            csvManager.close();
+            csvManager = null;
         }
     }
 }

@@ -1,15 +1,14 @@
 package com.coretec.sensing.sqlite;
 
+import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
-import com.coretec.sensing.model.Ap;
 import com.coretec.sensing.model.Poi;
 import com.coretec.sensing.model.Point;
 import com.coretec.sensing.utils.FilePath;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class PoiHelper {
     private static final String TABLE_POI = "poi";
@@ -47,5 +46,22 @@ public class PoiHelper {
         cursor.close();
 
         return poiArrayList;
+    }
+
+    public void insertPoiAll(ArrayList<Poi> poiArrayList) {
+        for (Poi poi : poiArrayList) {
+            ContentValues values = new ContentValues();
+
+            values.put(KEY_SEQ, poi.getSeq());
+            values.put(KEY_NAME, poi.getName());
+            values.put(KEY_MAP_X, poi.getPoint().getX());
+            values.put(KEY_MAP_Y, poi.getPoint().getY());
+
+            database.insert(TABLE_POI, "", values);
+        }
+    }
+
+    public void deleteAll() {
+        database.execSQL("DELETE FROM " + TABLE_POI + ";");
     }
 }

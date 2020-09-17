@@ -1,10 +1,20 @@
 package com.coretec.sensing.utils;
 
+import android.os.Environment;
+
+import java.io.File;
+
 /**
  * Created by CoreJin on 2017-03-29.
  */
 
 public class Const {
+    //로깅 폴더 경로
+    public static final String LoggingPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + File.separator;
+
+    //로깅 폴더 경로
+    public static final String DBPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + File.separator + "DB" + File.separator;
+
     public static final int NONE = 0;
     public static final int DRAG = 1;
     public static final int ZOOM = 2;
@@ -25,7 +35,6 @@ public class Const {
 //    public static final double RIGHT_BLANK_METER = PIXEL_PER_METER * RIGHT_BLANK_PIXEL;
 //    public static final double TOP_BLANK_METER = PIXEL_PER_METER * TOP_BLANK_PIXEL;
 //    public static final double BOTTOM_BLANK_METER = PIXEL_PER_METER * BOTTOM_BLANK_PIXEL;
-
 
     //11동 지하주차장 도면
     public static final float MAP_WIDTH = 4000f;

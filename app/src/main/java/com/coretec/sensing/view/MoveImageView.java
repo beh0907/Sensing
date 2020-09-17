@@ -8,18 +8,21 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-import androidx.appcompat.widget.AppCompatImageView;
-
 import com.coretec.sensing.utils.Const;
+
+import androidx.appcompat.widget.AppCompatImageView;
 
 import static com.coretec.sensing.utils.Const.MAP_HEIGHT;
 import static com.coretec.sensing.utils.Const.MAP_WIDTH;
 
 
 public class MoveImageView extends AppCompatImageView implements View.OnTouchListener {
+
     private Matrix matrix = new Matrix();
     private Matrix savedMatrix = new Matrix();
     private Matrix parentMatrix;
+
+    private String macAddress = "";
 
     private int parentWidth;
     private int parentHeight;
@@ -51,7 +54,20 @@ public class MoveImageView extends AppCompatImageView implements View.OnTouchLis
         this.parentHeight = parentHeight;
         this.posX = posX;
         this.posY = posY;
+    }
 
+    public MoveImageView(Matrix parentMatrix, int parentWidth, int parentHeight, int posX, int posY, Context context, String macAddress) {
+        super(context);
+        this.parentMatrix = parentMatrix;
+        this.parentWidth = parentWidth;
+        this.parentHeight = parentHeight;
+        this.posX = posX;
+        this.posY = posY;
+        this.macAddress = macAddress;
+    }
+
+    public String getMacAddress() {
+        return macAddress;
     }
 
     public int[] getPosLocation() {
@@ -103,8 +119,8 @@ public class MoveImageView extends AppCompatImageView implements View.OnTouchLis
 
 //        Log.d("Scale", "X : " + scaleX + ", Y : " + scaleY);
 
-        value[2] = parentValue[2] + (int) (posX * scaleX) - (imageWidth / 2);
-        value[5] = parentValue[5] + (int) (posY * scaleY) - (imageHeight / 2);
+        value[2] = parentValue[2] + (int) (posX * scaleX) - (imageWidth / 2f);
+        value[5] = parentValue[5] + (int) (posY * scaleY) - (imageHeight / 2f);
 
         matrix.setValues(value);
         setImageMatrix(matrix);

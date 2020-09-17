@@ -5,8 +5,10 @@ import android.os.Environment;
 import com.opencsv.CSVWriter;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.List;
 
 public class CsvManager {
@@ -23,15 +25,21 @@ public class CsvManager {
     }
 
     public CsvManager(String fileName) {
-        createFolder();
         this.fileName = fileName;
+        createFolder();
     }
 
-    public CsvManager(String fileName, String delimiter) {
-        createFolder();
+    public CsvManager(String baseDir, String fileName) {
+        this.baseDir = baseDir;
         this.fileName = fileName;
-        this.delimiter = delimiter;
+        createFolder();
     }
+
+//    public CsvManager(String fileName, String delimiter) {
+//        createFolder();
+//        this.fileName = fileName;
+//        this.delimiter = delimiter;
+//    }
 
     private void createFolder() {
         File folder = new File(baseDir);
@@ -52,11 +60,11 @@ public class CsvManager {
                 File file = new File(filePath);
 
                 if (file.exists() && !file.isDirectory()) {
-                    mFileWriter = new FileWriter(filePath, true);
-                    writer = new CSVWriter(mFileWriter);
+//                    mFileWriter = new FileWriter(filePath, true);
+                    writer = new CSVWriter(new OutputStreamWriter(new FileOutputStream(filePath), "EUC-KR"));
                 } else {
-                    mFileWriter = new FileWriter(filePath);
-                    writer = new CSVWriter(mFileWriter);
+//                    mFileWriter = new FileWriter(filePath);
+                    writer = new CSVWriter(new OutputStreamWriter(new FileOutputStream(filePath), "EUC-KR"));
                 }
             }
 
@@ -76,10 +84,10 @@ public class CsvManager {
 
             if (file.exists() && !file.isDirectory()) {
                 mFileWriter = new FileWriter(filePath, true);
-                writer = new CSVWriter(mFileWriter);
+                writer = new CSVWriter(new OutputStreamWriter(new FileOutputStream(filePath), "EUC-KR"));
             } else {
                 mFileWriter = new FileWriter(filePath);
-                writer = new CSVWriter(mFileWriter);
+                writer = new CSVWriter(new OutputStreamWriter(new FileOutputStream(filePath), "EUC-KR"));
             }
 
             writer.writeAll(all);

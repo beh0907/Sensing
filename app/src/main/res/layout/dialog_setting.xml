@@ -6,6 +6,7 @@
     android:orientation="vertical">
 
     <LinearLayout
+        android:visibility="gone"
         android:id="@+id/groupData"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -42,6 +43,29 @@
                 android:textSize="16sp" />
 
         </RadioGroup>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16sp"
+            android:gravity="center"
+            android:text="RTT 정보 삭제 간격(ms)"
+            android:textColor="@color/black"
+            android:textSize="16sp" />
+
+        <EditText
+            android:id="@+id/editRemoveInterval"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:inputType="numberDecimal"
+            android:text="2000" />
     </LinearLayout>
 
     <View

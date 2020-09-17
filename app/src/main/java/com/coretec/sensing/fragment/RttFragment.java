@@ -19,12 +19,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.databinding.DataBindingUtil;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.coretec.sensing.R;
 import com.coretec.sensing.activity.LoggingActivity;
 import com.coretec.sensing.adapter.WifiAdapter;
@@ -40,6 +34,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import androidx.annotation.NonNull;
+import androidx.databinding.DataBindingUtil;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class RttFragment extends Fragment {
     final Handler rttRequestDelayer = new Handler();
@@ -471,6 +471,18 @@ public class RttFragment extends Fragment {
 //            Log.d("와이파이 RTT 데이터 테스트 태그", accessPointsSupporting80211mcInfo.toString());
 
             wifiAdapter.swapData(accessPoints, accessPointsSupporting80211mc, accessPointsSupporting80211mcInfo);
+        }
+    }
+
+    public void csvClose() {
+        if (wifiCsvManager != null) {
+            wifiCsvManager.close();
+            wifiCsvManager = null;
+        }
+
+        if (rttCsvManager != null) {
+            rttCsvManager.close();
+            rttCsvManager = null;
         }
     }
 }

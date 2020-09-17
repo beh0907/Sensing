@@ -1,6 +1,7 @@
 package com.coretec.sensing.utils;
 
 
+import android.net.wifi.rtt.RangingResult;
 import android.os.SystemClock;
 
 import java.text.ParseException;
@@ -93,5 +94,9 @@ public class DateUtils {
         Date date = new Date(rxTimestampMillis);
 
         return df.format(date);
+    }
+
+    public static boolean isRemoveResult(RangingResult rangingResult, int stdTimeMillis) {
+        return System.currentTimeMillis() >= rangingResult.getRangingTimestampMillis() + stdTimeMillis;
     }
 }

@@ -1,10 +1,10 @@
 package com.coretec.sensing.sqlite;
 
+import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import com.coretec.sensing.model.Link;
-import com.coretec.sensing.model.Poi;
 import com.coretec.sensing.utils.FilePath;
 
 import java.util.ArrayList;
@@ -47,5 +47,24 @@ public class LinkHelper {
         cursor.close();
 
         return linkArrayList;
+    }
+
+    public void insertLinkAll(ArrayList<Link> linkArrayList) {
+
+        for (Link link : linkArrayList) {
+            ContentValues values = new ContentValues();
+
+            values.put(KEY_SEQ, link.getSeq());
+            values.put(KEY_NODE_START, link.getNode_start());
+            values.put(KEY_NODE_END, link.getNode_end());
+            values.put(KEY_WEIGHT_P, link.getWeight_p());
+            values.put(KEY_WEIGHT_M, link.getWeight_m());
+
+            database.insert(TABLE_LINK, "", values);
+        }
+    }
+
+    public void deleteAll() {
+        database.execSQL("DELETE FROM " + TABLE_LINK + ";");
     }
 }

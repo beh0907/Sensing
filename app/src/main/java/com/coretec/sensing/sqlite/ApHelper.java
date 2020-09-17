@@ -1,5 +1,6 @@
 package com.coretec.sensing.sqlite;
 
+import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -7,6 +8,7 @@ import com.coretec.sensing.model.Ap;
 import com.coretec.sensing.model.Point;
 import com.coretec.sensing.utils.FilePath;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ApHelper {
@@ -47,5 +49,33 @@ public class ApHelper {
         cursor.close();
 
         return apHashMap;
+    }
+
+    public void updateApPoint(int seq, float[] meterPoint) {
+        ContentValues values = new ContentValues();
+
+        values.put(KEY_MAP_X, meterPoint[0]);
+        values.put(KEY_MAP_Y, meterPoint[1]);
+
+        database.update(TABLE_AP, values, KEY_SEQ + "=" + seq, null);
+    }
+
+    public void insertApAll(ArrayList<Ap> apArrayList) {
+
+        for (Ap ap : apArrayList) {
+            ContentValues values = new ContentValues();
+
+            values.put(KEY_SEQ, ap.getSeq());
+            values.put(KEY_NAME, ap.getName());
+            values.put(KEY_MAC_ADDRESS, ap.getMacAddress());
+            values.put(KEY_MAP_X, ap.getPoint().getX());
+            values.put(KEY_MAP_Y, ap.getPoint().getY());
+
+            database.insert(TABLE_AP, "", values);
+        }
+    }
+
+    public void deleteAll() {
+        database.execSQL("DELETE FROM " + TABLE_AP + ";");
     }
 }

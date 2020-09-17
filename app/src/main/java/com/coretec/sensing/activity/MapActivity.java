@@ -15,14 +15,15 @@ import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.net.wifi.rtt.RangingRequest;
 import android.net.wifi.rtt.RangingResult;
 import android.net.wifi.rtt.RangingResultCallback;
 import android.net.wifi.rtt.WifiRttManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.SystemClock;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
@@ -41,15 +42,6 @@ import android.widget.ImageView;
 import android.widget.NumberPicker;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.GravityCompat;
-import androidx.databinding.DataBindingUtil;
-import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.coretec.sensing.R;
 import com.coretec.sensing.databinding.ActivityMapBinding;
@@ -70,8 +62,10 @@ import com.coretec.sensing.sqlite.NodeHelper;
 import com.coretec.sensing.sqlite.PoiHelper;
 import com.coretec.sensing.utils.Calculation;
 import com.coretec.sensing.utils.CsvManager;
+import com.coretec.sensing.utils.CsvUtil;
 import com.coretec.sensing.utils.DateUtils;
 import com.coretec.sensing.utils.GpsTracker;
+import com.coretec.sensing.utils.ImageUtils;
 import com.coretec.sensing.utils.PrefManager;
 import com.coretec.sensing.utils.Sensor;
 import com.coretec.sensing.utils.Sort;
@@ -91,6 +85,14 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.databinding.DataBindingUtil;
+import androidx.drawerlayout.widget.DrawerLayout;
 import lombok.SneakyThrows;
 import no.wtw.android.dijkstra.DijkstraAlgorithm;
 import no.wtw.android.dijkstra.model.Edge;
@@ -105,7 +107,9 @@ import static android.Manifest.permission.BLUETOOTH;
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static com.coretec.sensing.utils.Const.BOTTOM_BLANK_PIXEL;
+import static com.coretec.sensing.utils.Const.DBPath;
 import static com.coretec.sensing.utils.Const.LEFT_BLANK_PIXEL;
+import static com.coretec.sensing.utils.Const.LoggingPath;
 import static com.coretec.sensing.utils.Const.MAP_HEIGHT;
 import static com.coretec.sensing.utils.Const.METER_PER_PIXEL;
 import static com.coretec.sensing.utils.Const.PIXEL_PER_METER;
@@ -137,6 +141,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
     //setting 다이얼로그에서 설정
     //////////////////////////////////////////////////////////////////////////////
+    //오래된 데이터를 거르기 위한 인터벌 값을 설정
+    private int removeInterval = 2000;
     //링크과 연계하여 보정 결과 표출 알고리즘 설정
     private int useAlgorithm = 0;
     //RTT 조회 시 일괄로 요청하는 객체 개수
@@ -187,6 +193,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     private CsvManager sensorCsvManager;
     private CsvManager cellIdentityLteCsvManager;
     private CsvManager cellSignalStrengthLteCsvManager;
+    private CsvManager algorithmSettingCsvManager;
     //////////////////////////////////////////////////////////////////////////////
 
     //PT NUMBER 컨트롤
@@ -201,8 +208,10 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     private MoveImageView myLocationView2;
     //////////////////////////////////////////////////////////////////////////////
 
-    //poi, AP 등 이미지 객체 관리 리스트
-    private ArrayList<MoveImageView> listPointImage = new ArrayList<>();
+    //poi 이미지 객체 관리 리스트
+    private ArrayList<MoveImageView> listPoiImage = new ArrayList<>();
+    //AP 이미지 객체 관리 리스트
+    private ArrayList<MoveImageView> listApImage = new ArrayList<>();
 
     //내 위치 및 링크 연계 조정위치 객체
     private Point myLocation;
@@ -245,7 +254,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     private HashMap<String, ScanResult> accessPointsSupporting80211mc;
     private HashMap<String, RangingResult> accessPointsSupporting80211mcInfo;
 
-    //wifi, rtt 작성용 버퍼퍼
+    //wifi, rtt 작성용 버퍼
     private Map<String, Rtt> buffer;
 
     @Override
@@ -254,10 +263,11 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
         activityBinding.drawerLayout.closeDrawer(GravityCompat.START);
         switch (id) {
-//            case R.id.nav_logging:
-//                Intent bookmark = new Intent(this, LoggingActivity.class);
-//                startActivity(bookmark);
-//                return false;
+            case R.id.nav_logging:
+                Intent logging = new Intent(this, LoggingActivity.class);
+                startActivity(logging);
+                finish();
+                return false;
 
             case R.id.nav_map:
                 return false;
@@ -273,6 +283,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         return true;
     }
 
+    //AP위치 수정 기능 활성화 여부
+    private boolean isEdit = false;
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -285,6 +298,14 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                     activityBinding.drawerLayout.openDrawer(activityBinding.navView);
                 }
                 return true;
+            case R.id.item_edit:
+                isEdit = !isEdit;
+
+                if (isEdit)
+                    item.setIcon(R.drawable.ic_edit_used);
+                else
+                    item.setIcon(R.drawable.ic_edit);
+                break;
         }
         return false;
     }
@@ -292,7 +313,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.menu_nothing, menu);
+        inflater.inflate(R.menu.menu_edit, menu);
         return true;
     }
 
@@ -304,7 +325,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         }
         finish();
     }
-
 
     @Override
     public void onResume() {
@@ -324,8 +344,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
     private void downloadDB() {
         PrefManager pref = new PrefManager(this);
-//        if (!pref.isDownloadDB())
-        DBDownload.copyDB(pref, this);
+        if (!pref.isDownloadDB())
+            DBDownload.copyDB(pref, this);
     }
 
     public void showSettingParameterDialog(@NonNull Context context) {
@@ -343,6 +363,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         final EditText editRadius = dialogView.findViewById(R.id.editRadius);
         final EditText editApCount = dialogView.findViewById(R.id.editApCount);
         final EditText editReliability = dialogView.findViewById(R.id.editReliability);
+        final EditText editRemoveInterval = dialogView.findViewById(R.id.editRemoveInterval);
 
         pickerCombination.setMinValue(1);
         pickerCombination.setMaxValue(10);
@@ -364,6 +385,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         editRadius.setText(dbScanDistance + "");
         editApCount.setText(apScanCount + "");
         editReliability.setText(stdReliability + "");
+        editRemoveInterval.setText(removeInterval + "");
 
         if (useScanCount == 1)
             radioOne.setChecked(true);
@@ -392,6 +414,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                     useAlgorithm = 1;
                 else
                     useAlgorithm = 2;
+
+                //오래된 데이터를 거르기 위한 기준 시간 설정
+                removeInterval = Integer.parseInt(editRemoveInterval.getText().toString());
 
                 //DBSCAN을 사용할 경우 거리값 설정
                 dbScanDistance = Double.parseDouble(editRadius.getText().toString());
@@ -499,6 +524,11 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     protected void onDestroy() {
         super.onDestroy();
         end();
+
+        CsvUtil.writeApCsv(new ArrayList<>(apHashMap.values()), DBPath);
+        CsvUtil.writePoiCsv(poiArrayList, DBPath);
+        CsvUtil.writeNodeCsv(nodeArrayList, DBPath);
+        CsvUtil.writeLinkCsv(linkArrayList, DBPath);
     }
 
     @Override
@@ -526,7 +556,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
                 for (Ap ap : apHashMap.values()) {
                     int[] point = contentBinding.imgMap.pointMeterToPixel(new double[]{ap.getPoint().getX(), ap.getPoint().getY()});
-                    addPoint(parentWidth, parentHeight, point[0], point[1], R.drawable.ic_ap);
+                    addAp(parentWidth, parentHeight, point[0], point[1], ap.getMacAddress());
                 }
             }//권한습득 성공
 
@@ -536,12 +566,21 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             }
         };
 
-        TedPermission.with(this)
-                .setPermissionListener(permissionlistener)
-                .setRationaleMessage("앱을 사용하기 위해 권한설정이 필요합니다.")
-                .setDeniedMessage("앱 사용을 위해 권한을 설정해주세요.\n[설정] > [권한] 에서 권한을 허용할 수 있습니다.")
-                .setPermissions(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, BLUETOOTH, ACCESS_WIFI_STATE, ACCESS_BACKGROUND_LOCATION, BLUETOOTH)
-                .check();//권한습득
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            TedPermission.with(this)
+                    .setPermissionListener(permissionlistener)
+                    .setRationaleMessage("앱을 사용하기 위해 권한설정이 필요합니다.")
+                    .setDeniedMessage("앱 사용을 위해 권한을 설정해주세요.\n[설정] > [권한] 에서 권한을 허용할 수 있습니다.")
+                    .setPermissions(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, BLUETOOTH, ACCESS_WIFI_STATE, ACCESS_BACKGROUND_LOCATION)
+                    .check();//권한습득
+        } else {
+            TedPermission.with(this)
+                    .setPermissionListener(permissionlistener)
+                    .setRationaleMessage("앱을 사용하기 위해 권한설정이 필요합니다.")
+                    .setDeniedMessage("앱 사용을 위해 권한을 설정해주세요.\n[설정] > [권한] 에서 권한을 허용할 수 있습니다.")
+                    .setPermissions(WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, BLUETOOTH, ACCESS_WIFI_STATE)
+                    .check();//권한습득
+        }
     }
 
     private void init() {
@@ -594,6 +633,33 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         apHelper = new ApHelper();
         nodeHelper = new NodeHelper();
         linkHelper = new LinkHelper();
+
+
+//        File poiFile = new File(DBPath, "POI.csv");
+//        File apFile = new File(DBPath, "AP.csv");
+//        File linkFile = new File(DBPath, "LINK.csv");
+//        File nodeFile = new File(DBPath, "NODE.csv");
+//
+//        if (poiFile.exists()) {
+//            poiHelper.deleteAll();
+//            poiHelper.insertPoiAll(CsvUtil.readPoiCsv(poiFile.getAbsolutePath()));
+//        }
+//
+//        if (apFile.exists()) {
+//            apHelper.deleteAll();
+//            apHelper.insertApAll(CsvUtil.readApCsv(apFile.getAbsolutePath()));
+//        }
+//
+//        if (nodeFile.exists()) {
+//            nodeHelper.deleteAll();
+//            nodeHelper.insertNodeAll(CsvUtil.readNodeCsv(linkFile.getAbsolutePath()));
+//
+//        }
+//
+//        if (linkFile.exists()) {
+//            linkHelper.deleteAll();
+//            linkHelper.insertLinkAll(CsvUtil.readLinkCsv(nodeFile.getAbsolutePath()));
+//        }
     }
 
     private void initRtt() {
@@ -728,6 +794,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         }
     }
 
+    //지도와 관련된 함수들
+    //===========================================================================================
     //지정된 좌표 상에 이미지 표출
     private void addPoint(int parentWidth, int parentHeight, int posX, int posY, int resId) {
         if (resId == 0)
@@ -742,7 +810,21 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         imgDonut.setLayoutParams(layoutParams);
         imgDonut.setScaleType(ImageView.ScaleType.MATRIX);
 
-        listPointImage.add(imgDonut);
+        listPoiImage.add(imgDonut);
+        contentBinding.imgMarker.addView(imgDonut);
+    }
+
+    private void addAp(int parentWidth, int parentHeight, int posX, int posY, String macAddress) {
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_ap);
+
+        MoveImageView imgDonut = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, posX, posY, this, macAddress);
+        imgDonut.setImageBitmap(bitmap);
+        imgDonut.setLayoutParams(layoutParams);
+        imgDonut.setScaleType(ImageView.ScaleType.MATRIX);
+
+        listApImage.add(imgDonut);
         contentBinding.imgMarker.addView(imgDonut);
     }
 
@@ -789,22 +871,70 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     private void removeAlMarker() {
-        contentBinding.imgMarker.removeAllViews();
-        listPointImage.clear();
+        for (MoveImageView moveImageView : listPoiImage) {
+            contentBinding.imgMarker.removeView(moveImageView);
+            listPoiImage.remove(moveImageView);
+        }
     }
 
     //지도 컨트롤시(이동/확대/축소) 이미지 위치 조정
     @Override
     public void onTouchMap() {
-        for (MoveImageView imageView : listPointImage) {
+        for (MoveImageView imageView : listPoiImage) {
             imageView.initPosition();
         }
+
+        for (MoveImageView imageView : listApImage) {
+            imageView.initPosition();
+        }
+
         if (myLocationView != null)
             myLocationView.initPosition();
 
         if (myLocationView2 != null)
             myLocationView2.initPosition();
     }
+
+    //터치 좌표를 기준으로 AP 검색
+    public MoveImageView getApPosition(float srcX, float srcY, Matrix matrix, float scale) {
+        if (!isEdit)
+            return null;
+
+        float[] dst = new float[2];
+        float[] src = new float[2];
+
+        for (MoveImageView imageView : listApImage) {
+
+            int[] posLocation = imageView.getPosLocation();
+
+            src[0] = ImageUtils.getDp(this, posLocation[0]);
+            src[1] = ImageUtils.getDp(this, posLocation[1]);
+            matrix.mapPoints(dst, src);
+
+            Log.d("스케일", scale + "");
+
+
+            if (srcX > dst[0] - ImageUtils.getDp(this, 50 * scale) && srcX < dst[0] + ImageUtils.getDp(this, 50 * scale) && srcY > dst[1] - ImageUtils.getDp(this, 50 * scale) && srcY < dst[1] + ImageUtils.getDp(this, 50 * scale)) {
+                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_ap_search);
+                imageView.setImageBitmap(bitmap);
+                return imageView;
+            }
+        }
+        return null;
+    }
+
+    public void setApPosition(MoveImageView imageView, float[] pixelPoint) {
+        int position = listApImage.indexOf(imageView);
+
+        imageView.setPosLocation(pixelPoint);
+        listApImage.set(position, imageView);
+    }
+
+    public void setPointDB(MoveImageView imageView, float[] meterPoint) {
+        Log.d("저장 포지션", "(" + meterPoint[0] + "," + meterPoint[1] + ")");
+        apHelper.updateApPoint(apHashMap.get(imageView.getMacAddress()).getSeq(), meterPoint);
+    }
+//    ===========================================================================================
 
     @Override
     public void onClick(View v) {
@@ -869,7 +999,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     private void start() {
-        if (searchResult == null) {
+        if (searchResult == null && isLoggingRtt) {
             AlarmDialog.showDialog(this, "스캔 버튼을 눌러 1개 이상의 RTT 지원 AP를 찾아주세요.");
             contentBinding.btnStart.setChecked(false);
             return;
@@ -877,25 +1007,21 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
 
         if (!isCreateFile) {
-            String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath() + File.separator;
             String fileName = contentBinding.editFileName.getText().toString();
 
-            File fileWifi = new File(filePath, fileName + "_WIFI.csv");
-            File fileRtt = new File(filePath, fileName + "_RTT.csv");
-            File fileBluetooth = new File(filePath, fileName + "_Bluetooth.csv");
-            File fileSensor = new File(filePath, fileName + "_Sensor.csv");
-            File fileIdentityLte = new File(filePath, fileName + "_CellIdentityLte.csv");
-            File fileStrengthLte = new File(filePath, fileName + "_CellSignalStrengthLte.csv");
+            File fileWifi = new File(LoggingPath, fileName + "_WIFI.csv");
+            File fileRtt = new File(LoggingPath, fileName + "_RTT.csv");
+            File fileBluetooth = new File(LoggingPath, fileName + "_Bluetooth.csv");
+            File fileSensor = new File(LoggingPath, fileName + "_Sensor.csv");
+            File fileIdentityLte = new File(LoggingPath, fileName + "_CellIdentityLte.csv");
+            File fileStrengthLte = new File(LoggingPath, fileName + "_CellSignalStrengthLte.csv");
+            File fileAlgorithmSetting = new File(LoggingPath, fileName + "_AlgorithmSetting.csv");
 
-            if (fileWifi.exists() || fileRtt.exists() || fileBluetooth.exists() || fileSensor.exists() || fileIdentityLte.exists() || fileStrengthLte.exists()) {
+            if (fileWifi.exists() || fileRtt.exists() || fileBluetooth.exists() || fileSensor.exists() || fileIdentityLte.exists() || fileStrengthLte.exists() || fileAlgorithmSetting.exists()) {
                 contentBinding.btnStart.setChecked(false);
                 AlarmDialog.showDialog(this, "파일명이 중복되어 스캔할 수 없습니다.\n파일을 삭제하거나 작성 파일명을 수정해주세요.");
                 return;
             }
-
-            myLocationCsvManager = new CsvManager(fileName + "_MyLocation.csv");
-            myLocationCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,AP1 MAC,AP1 RANGE,AP2 MAC,AP2 RANGE,AP3 MAC,AP3 RANGE,AP4 MAC,AP4 RANGE,AP5 MAC,AP5 RANGE,AP6 MAC,AP6 RANGE,AP7 MAC,AP7 RANGE,AP8 MAC,AP8 RANGE,AP9 MAC,AP9 RANGE,AP10 MAC,AP10 RANGE,Median (X),Median (Y),DBscan (X),DBscan (Y),Reliability (X),Reliability (Y)");
-
             if (isLoggingWifi) {
                 wifiCsvManager = new CsvManager(fileName + "_WIFI.csv");
                 wifiCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,centerFreq0,centerFreq1,channelWidth,frequency,level");
@@ -904,6 +1030,10 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             if (isLoggingRtt) {
                 rttCsvManager = new CsvManager(fileName + "_RTT.csv");
                 rttCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,RttStatus,Distance(Mm),DistanceStdDev(Mm),Rssi,timestamp,NumAttemptedMeasurements,NumSuccessfulMeasurements");
+
+                myLocationCsvManager = new CsvManager(fileName + "_MyLocation.csv");
+                myLocationCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,AP1 MAC,AP1 RANGE,AP2 MAC,AP2 RANGE,AP3 MAC,AP3 RANGE,AP4 MAC,AP4 RANGE,AP5 MAC,AP5 RANGE,AP6 MAC,AP6 RANGE,AP7 MAC,AP7 RANGE,AP8 MAC,AP8 RANGE,AP9 MAC,AP9 RANGE,AP10 MAC,AP10 RANGE,Median (X),Median (Y),DBscan (X),DBscan (Y),Reliability (X),Reliability (Y)");
+
             }
 
             if (isLoggingBluetooth) {
@@ -927,14 +1057,27 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                     cellSignalStrengthLteCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,AsuLevel,Cqi,dBm,Level,Rsrp,Rsrq,Rssnr,TimingAdvance");
                 }
             }
+
+            algorithmSettingCsvManager = new CsvManager(fileName + "_AlgorithmSetting.csv");
+            algorithmSettingCsvManager.Write("일괄 통신 요청 개수,AP 총 요청 개수,DB SCAN 반경(M),알고리즘 조합 개수,DB SCAN 필터링 기준,Reliability 임계치(m)");
+            algorithmSettingCsvManager.Write(useScanCount + "," + apScanCount + "," + dbScanDistance + "," + combination + "," + dbScanFilter + "," + stdReliability);
         }
         startTimer();
 
-        wifiStartScanning(wifiInterval);
-        rttStartScanning(rttInterval);
-        bluetoothStartScanning(blueToothInterval);
-        sensorStartScanning(sensorInterval);
-        lteStartScanning(lteInterval);
+        if (isLoggingWifi)
+            wifiStartScanning(wifiInterval);
+
+        if (isLoggingRtt)
+            rttStartScanning(rttInterval);
+
+        if (isLoggingBluetooth)
+            bluetoothStartScanning(blueToothInterval);
+
+        if (isLoggingSensor)
+            sensorStartScanning(sensorInterval);
+
+        if (isLoggingLte)
+            lteStartScanning(lteInterval);
 
         isCreateFile = true;
         isLogging = true;
@@ -945,6 +1088,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
     private void pause() {
         contentBinding.txtPtNum.setText(++ptNum + "");
+
+        accessPointsSupporting80211mcInfo.clear();
 
         isLogging = false;
         stopTimer();
@@ -1020,6 +1165,13 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
                     @SuppressLint("MissingPermission")
                     public void run() {
+
+                        for (RangingResult rangingResult : accessPointsSupporting80211mcInfo.values()) {
+                            if (DateUtils.isRemoveResult(rangingResult, removeInterval))
+                                accessPointsSupporting80211mcInfo.remove(rangingResult.getMacAddress());
+                        }
+
+
                         //체크된 RTT지원 항목만 얻음
                         ArrayList<ScanResult> results = new ArrayList<>();
                         RangingRequest rangingRequest;
@@ -1073,7 +1225,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                                         results.clear();
                                     }
                                 }
-
                             } else {
                                 for (Ap ap : apHashMap.values()) {
                                     searchResult.BSSID = ap.getMacAddress();
@@ -1100,12 +1251,12 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
     public void bluetoothStartScanning(int delay) {
         ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(
-                ScanSettings.SCAN_MODE_LOW_LATENCY)
-                .setReportDelay(delay)
+                ScanSettings.SCAN_MODE_LOW_POWER)
                 .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                 .build();
 
         bluetoothLeScanner.startScan(null, scanSettings, leScanCallback);
+//        bluetoothLeScanner.startScan(leScanCallback);
 
         bluetoothTimer = new TimerTask() {
             public void run() {
@@ -1127,7 +1278,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
         // 0초후 첫실행, 설정된 Delay마다 실행
         Timer timer = new Timer();
-        timer.schedule(bluetoothTimer, 1000, delay);
+        timer.schedule(bluetoothTimer, 0, delay);
     }
 
     public void sensorStartScanning(int delay) {
@@ -1278,6 +1429,11 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             cellSignalStrengthLteCsvManager.close();
             cellSignalStrengthLteCsvManager = null;
         }
+
+        if (algorithmSettingCsvManager != null) {
+            algorithmSettingCsvManager.close();
+            algorithmSettingCsvManager = null;
+        }
     }
 
 
@@ -1298,7 +1454,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         }
     }
 
-    private void find80211mcSupportedAccessPoints(@NonNull List<ScanResult> originalList) {
+    private void find80211mcSupportedAccessPoints
+            (@NonNull List<ScanResult> originalList) {
         for (ScanResult scanResult : originalList) {
 
             if (!scanResult.is80211mcResponder())
@@ -1352,8 +1509,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             find80211mcSupportedAccessPoints(scanResults);
 
             if (accessPointsSupporting80211mc.size() < useScanCount) {
-//                LoadingDialog.updateMessage("AP를 스캔 중입니다... (" + accessPointsSupporting80211mc.size() + "/" + useScanCount + ")");
-                scanWifi();
+                //RTT AP를 하나도 찾기 못할 경우 무한 조회
+//                scanWifi();
             } else {
                 ArrayList<ScanResult> tempList = new ArrayList<>();
 

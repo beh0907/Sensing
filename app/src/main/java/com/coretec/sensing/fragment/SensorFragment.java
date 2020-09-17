@@ -26,8 +26,6 @@ public class SensorFragment extends Fragment {
 
     private FragmentSensorBinding sensorBinding;
 
-//    private ArrayList<SensorData> sensorDataArrayList;
-
     private GpsTracker gpsTracker;
 
     private Sensor sensor;
@@ -161,6 +159,13 @@ public class SensorFragment extends Fragment {
             sensor.end();
             sensorTimer.cancel();
             sensorTimer = null;
+        }
+    }
+
+    public void csvClose() {
+        if (csvManager != null) {
+            csvManager.close();
+            csvManager = null;
         }
     }
 }

@@ -90,7 +90,7 @@
         android:layout_height="wrap_content">
 
         <LinearLayout
-            android:layout_toStartOf="@id/checkBluetooth"
+            android:layout_toStartOf="@id/checkSensor"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20sp"
@@ -117,7 +117,7 @@
         <CheckBox
             android:layout_centerVertical="true"
             android:layout_alignParentEnd="true"
-            android:id="@+id/checkBluetooth"
+            android:id="@+id/checkSensor"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
@@ -130,7 +130,7 @@
         android:layout_height="wrap_content">
 
         <LinearLayout
-            android:layout_toStartOf="@id/checkSensor"
+            android:layout_toStartOf="@id/checkBluetooth"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20sp"
@@ -155,9 +155,9 @@
         </LinearLayout>
 
         <CheckBox
+            android:id="@+id/checkBluetooth"
             android:layout_centerVertical="true"
             android:layout_alignParentEnd="true"
-            android:id="@+id/checkSensor"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 

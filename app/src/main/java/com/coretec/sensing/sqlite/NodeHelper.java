@@ -1,10 +1,10 @@
 package com.coretec.sensing.sqlite;
 
+import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import com.coretec.sensing.model.Node;
-import com.coretec.sensing.model.Poi;
 import com.coretec.sensing.model.Point;
 import com.coretec.sensing.utils.FilePath;
 
@@ -44,5 +44,22 @@ public class NodeHelper {
         cursor.close();
 
         return nodeArrayList;
+    }
+
+    public void insertNodeAll(ArrayList<Node> nodeArrayList) {
+
+        for (Node node : nodeArrayList) {
+            ContentValues values = new ContentValues();
+
+            values.put(KEY_SEQ, node.getSeq());
+            values.put(KEY_MAP_X, node.getPoint().getX());
+            values.put(KEY_MAP_Y, node.getPoint().getY());
+
+            database.insert(TABLE_NODE, "", values);
+        }
+    }
+
+    public void deleteAll() {
+        database.execSQL("DELETE FROM " + TABLE_NODE + ";");
     }
 }
