@@ -97,6 +97,9 @@ public class DateUtils {
     }
 
     public static boolean isRemoveResult(RangingResult rangingResult, int stdTimeMillis) {
-        return System.currentTimeMillis() >= rangingResult.getRangingTimestampMillis() + stdTimeMillis;
+        long temp = SystemClock.elapsedRealtime();
+        long rangingTime = rangingResult.getRangingTimestampMillis();
+
+        return temp >= rangingTime + stdTimeMillis;
     }
 }

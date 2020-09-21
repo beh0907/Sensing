@@ -21,12 +21,12 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.inputmethod.InputMethodManager;
 
+import androidx.appcompat.widget.AppCompatImageView;
+
 import com.coretec.sensing.R;
 import com.coretec.sensing.activity.MapActivity;
 import com.coretec.sensing.listener.OnTouchMapListener;
 import com.coretec.sensing.utils.Const;
-
-import androidx.appcompat.widget.AppCompatImageView;
 
 import static com.coretec.sensing.utils.Const.BOTTOM_BLANK_PIXEL;
 import static com.coretec.sensing.utils.Const.LEFT_BLANK_PIXEL;
@@ -221,10 +221,16 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
                 matrix.getValues(value);
 
                 moveImageView = mapActivity.getApPosition(event.getX(), event.getY(), matrix, value[0]);
+
+                if (moveImageView != null)
+                    startTimeout();
                 break;
 
             case MotionEvent.ACTION_MOVE:
                 if (moveImageView != null) {
+                    if (Math.abs(event.getX() - start.x) > scaledTouchSlope || Math.abs(start.y - event.getY()) > scaledTouchSlope)
+                        stopTimeout();
+
                     value = new float[9];
                     matrix.getValues(value);
 
@@ -283,6 +289,10 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
 
             case MotionEvent.ACTION_POINTER_UP:
                 mode = Const.NONE;
+                break;
+
+            case MotionEvent.ACTION_CANCEL:
+                stopTimeout();
                 break;
         }
 
@@ -447,12 +457,24 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
     }
 
 
+    public void startTimeout() {
+        isLongPressed = false;
+        mHandler.postDelayed(longPressCheckRunnable, longPressTimeout);
+    }
+
+
+    public void stopTimeout() {
+        if (!isLongPressed)
+            mHandler.removeCallbacks(longPressCheckRunnable);
+    }
+
     private class LongPressCheckRunnable implements Runnable {
         @Override
         public void run() {
             isLongPressed = true;
             if (moveImageView != null) {
                 moveImageView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                mapActivity.deleteAp(moveImageView);
 
                 //터치 이벤트 강제로 종료
                 new Thread(new Runnable() {

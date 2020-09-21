@@ -75,6 +75,22 @@ public class ApHelper {
         }
     }
 
+    public void insertAp(Ap ap) {
+        ContentValues values = new ContentValues();
+
+        values.put(KEY_SEQ, ap.getSeq());
+        values.put(KEY_NAME, ap.getName());
+        values.put(KEY_MAC_ADDRESS, ap.getMacAddress());
+        values.put(KEY_MAP_X, ap.getPoint().getX());
+        values.put(KEY_MAP_Y, ap.getPoint().getY());
+
+        database.insert(TABLE_AP, "", values);
+    }
+
+    public void deleteAp(Ap ap) {
+        database.delete(TABLE_AP, KEY_SEQ + "=?", new String[]{ap.getSeq() + ""});
+    }
+
     public void deleteAll() {
         database.execSQL("DELETE FROM " + TABLE_AP + ";");
     }

@@ -43,6 +43,15 @@ import android.widget.NumberPicker;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.databinding.DataBindingUtil;
+import androidx.drawerlayout.widget.DrawerLayout;
+
 import com.coretec.sensing.R;
 import com.coretec.sensing.databinding.ActivityMapBinding;
 import com.coretec.sensing.databinding.ContentMapBinding;
@@ -60,6 +69,7 @@ import com.coretec.sensing.sqlite.DBDownload;
 import com.coretec.sensing.sqlite.LinkHelper;
 import com.coretec.sensing.sqlite.NodeHelper;
 import com.coretec.sensing.sqlite.PoiHelper;
+import com.coretec.sensing.utils.ArrayCopy;
 import com.coretec.sensing.utils.Calculation;
 import com.coretec.sensing.utils.CsvManager;
 import com.coretec.sensing.utils.CsvUtil;
@@ -85,14 +95,6 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.GravityCompat;
-import androidx.databinding.DataBindingUtil;
-import androidx.drawerlayout.widget.DrawerLayout;
 import lombok.SneakyThrows;
 import no.wtw.android.dijkstra.DijkstraAlgorithm;
 import no.wtw.android.dijkstra.model.Edge;
@@ -551,12 +553,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 loadMapImage();
                 setBackgroundPosition();
 
-                int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
-                int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
-
                 for (Ap ap : apHashMap.values()) {
                     int[] point = contentBinding.imgMap.pointMeterToPixel(new double[]{ap.getPoint().getX(), ap.getPoint().getY()});
-                    addAp(parentWidth, parentHeight, point[0], point[1], ap.getMacAddress());
+                    addAp(point[0], point[1], ap.getMacAddress());
                 }
             }//권한습득 성공
 
@@ -778,28 +777,28 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         contentBinding.txtStart.setText("현재 위치");
         contentBinding.txtEnd.setText(poiArrayList.get(poiEnd.getSeq() - 1).getName());
 
-        int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
-        int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
-
         for (int i = 0; i < path.size(); i++) {
             Vertex vertex = path.get(i);
             Node node = nodeArrayList.get((Integer) vertex.getPayload() - 1);
             contentBinding.imgMap.addPath((float) node.getPoint().getX(), (float) node.getPoint().getY());
 
             if (i == 0)
-                addPoint(parentWidth, parentHeight, (int) node.getPoint().getX(), (int) node.getPoint().getY(), R.drawable.ic_departure);
+                addPoint((int) node.getPoint().getX(), (int) node.getPoint().getY(), R.drawable.ic_departure);
 
             if (i == path.size() - 1)
-                addPoint(parentWidth, parentHeight, (int) node.getPoint().getX(), (int) node.getPoint().getY(), R.drawable.ic_destination);
+                addPoint((int) node.getPoint().getX(), (int) node.getPoint().getY(), R.drawable.ic_destination);
         }
     }
 
     //지도와 관련된 함수들
     //===========================================================================================
     //지정된 좌표 상에 이미지 표출
-    private void addPoint(int parentWidth, int parentHeight, int posX, int posY, int resId) {
+    private void addPoint(int posX, int posY, int resId) {
         if (resId == 0)
             return;
+
+        int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
+        int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
 
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
@@ -814,7 +813,10 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         contentBinding.imgMarker.addView(imgDonut);
     }
 
-    private void addAp(int parentWidth, int parentHeight, int posX, int posY, String macAddress) {
+    private void addAp(int posX, int posY, String macAddress) {
+        int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
+        int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
+
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_ap);
@@ -893,6 +895,58 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
         if (myLocationView2 != null)
             myLocationView2.initPosition();
+    }
+
+    public void insertAp(int[] pixelPoint) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("마커 추가");
+
+        builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int id) {
+                Ap ap = new Ap();
+
+                addAp(pixelPoint[0], pixelPoint[1], ap.getMacAddress());
+                apHelper.insertAp(ap);
+            }
+        });
+
+        builder.setNegativeButton("취소", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.dismiss();
+            }
+        });
+        builder.setCancelable(false);
+        android.app.AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    public void deleteAp(MoveImageView imageView) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setMessage("선택한 마커를 삭제하시겠습니까?");
+
+        builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int id) {
+                int position = listApImage.indexOf(imageView);
+
+                apHelper.deleteAp(apHashMap.get(imageView.getMacAddress()));
+
+                listApImage.remove(position);
+                contentBinding.imgMarker.removeView(imageView);
+            }
+        });
+
+        builder.setNegativeButton("취소", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.dismiss();
+            }
+        });
+        builder.setCancelable(false);
+        android.app.AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     //터치 좌표를 기준으로 AP 검색
@@ -1165,22 +1219,17 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
                     @SuppressLint("MissingPermission")
                     public void run() {
-
-                        for (RangingResult rangingResult : accessPointsSupporting80211mcInfo.values()) {
-                            if (DateUtils.isRemoveResult(rangingResult, removeInterval))
-                                accessPointsSupporting80211mcInfo.remove(rangingResult.getMacAddress());
-                        }
-
+//                        HashMap<String, RangingResult> rawResultMap = new HashMap<>(accessPointsSupporting80211mcInfo);
+                        HashMap<String, RangingResult> rawResultMap = ArrayCopy.deepCopyHashMap(accessPointsSupporting80211mcInfo, removeInterval);
 
                         //체크된 RTT지원 항목만 얻음
                         ArrayList<ScanResult> results = new ArrayList<>();
                         RangingRequest rangingRequest;
 
-                        HashMap<String, RangingResult> rawResultMaP = new HashMap<>(accessPointsSupporting80211mcInfo);
 //                        accessPointsSupporting80211mcInfo.clear();
 
-                        if (rawResultMaP.size() > 0) {
-                            rttRangingResultCallback.getMyLocation(new ArrayList(rawResultMaP.values()));
+                        if (rawResultMap.size() > combination) {
+                            rttRangingResultCallback.getMyLocation(new ArrayList(rawResultMap.values()));
 
                             HashMap<String, Double> distanceMap = new HashMap<>();
 
@@ -1607,20 +1656,11 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             //오름차순
             Sort.Ascending ascending = new Sort.Ascending();
 
-            if (list.size() < combination) {
-                list.clear();
-                return;
-            }
-
             HashMap<String, Integer> distanceMap = new HashMap<>();
 
             for (int i = list.size() - 1; i >= 0; i--) {
                 RangingResult rangingResult = list.get(i);
-
-                if (rangingResult.getStatus() == RangingResult.STATUS_SUCCESS)
-                    distanceMap.put(rangingResult.getMacAddress().toString(), rangingResult.getDistanceMm());
-                else
-                    list.remove(rangingResult);
+                distanceMap.put(rangingResult.getMacAddress().toString(), rangingResult.getDistanceMm());
             }
 
             List<String> keySetList = new ArrayList<>(distanceMap.keySet());
