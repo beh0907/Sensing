@@ -113,8 +113,10 @@ import static com.coretec.sensing.utils.Const.DBPath;
 import static com.coretec.sensing.utils.Const.LEFT_BLANK_PIXEL;
 import static com.coretec.sensing.utils.Const.LoggingPath;
 import static com.coretec.sensing.utils.Const.MAP_HEIGHT;
-import static com.coretec.sensing.utils.Const.METER_PER_PIXEL;
-import static com.coretec.sensing.utils.Const.PIXEL_PER_METER;
+import static com.coretec.sensing.utils.Const.METER_PER_PIXEL_HEIGHT;
+import static com.coretec.sensing.utils.Const.METER_PER_PIXEL_WIDTH;
+import static com.coretec.sensing.utils.Const.PIXEL_PER_METER_HEIGHT;
+import static com.coretec.sensing.utils.Const.PIXEL_PER_METER_WIDTH;
 
 public class MapActivity extends AppCompatActivity implements OnTouchMapListener, NavigationView.OnNavigationItemSelectedListener, View.OnClickListener {
 
@@ -305,8 +307,14 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
                 if (isEdit)
                     item.setIcon(R.drawable.ic_edit_used);
-                else
+                else {
                     item.setIcon(R.drawable.ic_edit);
+
+                    CsvUtil.writeApCsv(new ArrayList<>(apHashMap.values()), DBPath);
+                    CsvUtil.writePoiCsv(poiArrayList, DBPath);
+                    CsvUtil.writeNodeCsv(nodeArrayList, DBPath);
+                    CsvUtil.writeLinkCsv(linkArrayList, DBPath);
+                }
                 break;
         }
         return false;
@@ -526,11 +534,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     protected void onDestroy() {
         super.onDestroy();
         end();
-
-        CsvUtil.writeApCsv(new ArrayList<>(apHashMap.values()), DBPath);
-        CsvUtil.writePoiCsv(poiArrayList, DBPath);
-        CsvUtil.writeNodeCsv(nodeArrayList, DBPath);
-        CsvUtil.writeLinkCsv(linkArrayList, DBPath);
     }
 
     @Override
@@ -634,31 +637,31 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         linkHelper = new LinkHelper();
 
 
-//        File poiFile = new File(DBPath, "POI.csv");
-//        File apFile = new File(DBPath, "AP.csv");
-//        File linkFile = new File(DBPath, "LINK.csv");
-//        File nodeFile = new File(DBPath, "NODE.csv");
-//
-//        if (poiFile.exists()) {
-//            poiHelper.deleteAll();
-//            poiHelper.insertPoiAll(CsvUtil.readPoiCsv(poiFile.getAbsolutePath()));
-//        }
-//
-//        if (apFile.exists()) {
-//            apHelper.deleteAll();
-//            apHelper.insertApAll(CsvUtil.readApCsv(apFile.getAbsolutePath()));
-//        }
-//
-//        if (nodeFile.exists()) {
-//            nodeHelper.deleteAll();
-//            nodeHelper.insertNodeAll(CsvUtil.readNodeCsv(linkFile.getAbsolutePath()));
-//
-//        }
-//
-//        if (linkFile.exists()) {
-//            linkHelper.deleteAll();
-//            linkHelper.insertLinkAll(CsvUtil.readLinkCsv(nodeFile.getAbsolutePath()));
-//        }
+        File poiFile = new File(DBPath, "POI.csv");
+        File apFile = new File(DBPath, "AP.csv");
+        File linkFile = new File(DBPath, "LINK.csv");
+        File nodeFile = new File(DBPath, "NODE.csv");
+
+        if (apFile.exists()) {
+            apHelper.deleteAll();
+            apHelper.insertApAll(CsvUtil.readApCsv(apFile.getAbsolutePath()));
+        }
+
+        if (poiFile.exists()) {
+            poiHelper.deleteAll();
+            poiHelper.insertPoiAll(CsvUtil.readPoiCsv(poiFile.getAbsolutePath()));
+        }
+
+        if (nodeFile.exists()) {
+            nodeHelper.deleteAll();
+            nodeHelper.insertNodeAll(CsvUtil.readNodeCsv(nodeFile.getAbsolutePath()));
+
+        }
+
+        if (linkFile.exists()) {
+            linkHelper.deleteAll();
+            linkHelper.insertLinkAll(CsvUtil.readLinkCsv(linkFile.getAbsolutePath()));
+        }
     }
 
     private void initRtt() {
@@ -746,7 +749,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 //        options.inDither = false;
         options.inPreferredConfig = Bitmap.Config.RGB_565;
 
-        Bitmap result = BitmapFactory.decodeResource(resource, R.drawable.bg_map2, options);
+        Bitmap result = BitmapFactory.decodeResource(resource, R.drawable.bg_map3, options);
         contentBinding.imgMap.setImageBitmap(result);
 //        contentBinding.imgMap.initPath();
     }
@@ -768,7 +771,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         removeAlMarker();
         contentBinding.imgMap.initPath();
 
-        pathDistance = (int) (dijkstraAlgorithm.getDistance(new Vertex<>(poiEnd.getSeq())) * PIXEL_PER_METER);
+        pathDistance = (int) (dijkstraAlgorithm.getDistance(new Vertex<>(poiEnd.getSeq())) * PIXEL_PER_METER_WIDTH);
         path = dijkstraAlgorithm.getPath(new Vertex<>(poiEnd.getSeq()));
 
         contentBinding.txtNaviLen.setText(pathDistance + "m");
@@ -819,7 +822,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
-        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_ap);
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_marker);
 
         MoveImageView imgDonut = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, posX, posY, this, macAddress);
         imgDonut.setImageBitmap(bitmap);
@@ -842,7 +845,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         if (myLocationView != null)
             contentBinding.imgMarker.removeView(myLocationView);
 
-        myLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * METER_PER_PIXEL + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * METER_PER_PIXEL) - BOTTOM_BLANK_PIXEL), MapActivity.this);
+        myLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * METER_PER_PIXEL_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * METER_PER_PIXEL_HEIGHT) - BOTTOM_BLANK_PIXEL), MapActivity.this);
 
         myLocationView.setImageBitmap(bitmap);
         myLocationView.setLayoutParams(layoutParams);
@@ -863,7 +866,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         if (myLocationView2 != null)
             contentBinding.imgMarker.removeView(myLocationView2);
 
-        myLocationView2 = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * METER_PER_PIXEL + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * METER_PER_PIXEL) - BOTTOM_BLANK_PIXEL), MapActivity.this);
+        myLocationView2 = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * METER_PER_PIXEL_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * METER_PER_PIXEL_HEIGHT) - BOTTOM_BLANK_PIXEL), MapActivity.this);
 
         myLocationView2.setImageBitmap(bitmap);
         myLocationView2.setLayoutParams(layoutParams);
@@ -897,16 +900,32 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             myLocationView2.initPosition();
     }
 
-    public void insertAp(int[] pixelPoint) {
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+    public void insertAp(float[] pixelPoint, float[] meterPoint) {
+        if (!isEdit)
+            return;
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_ap, null);
+
+        final EditText editApName = dialogView.findViewById(R.id.editApName);
+        final EditText MacAddressEditText = dialogView.findViewById(R.id.editApMac);
+        final EditText txtPointX = dialogView.findViewById(R.id.txtPointX);
+        final EditText txtPointY = dialogView.findViewById(R.id.txtPointY);
+
+        txtPointX.setText(meterPoint[0] + "");
+        txtPointY.setText(meterPoint[1] + "");
+
         builder.setTitle("마커 추가");
+        builder.setView(dialogView);
+        builder.setCancelable(false);
 
         builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
-                Ap ap = new Ap();
+                Ap ap = new Ap(listApImage.size() + 1, editApName.getText().toString(), MacAddressEditText.getText().toString(), new Point(meterPoint[0], meterPoint[1]));
 
-                addAp(pixelPoint[0], pixelPoint[1], ap.getMacAddress());
+                addAp((int) pixelPoint[0], (int) pixelPoint[1], ap.getMacAddress());
                 apHelper.insertAp(ap);
             }
         });
@@ -918,11 +937,14 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             }
         });
         builder.setCancelable(false);
-        android.app.AlertDialog dialog = builder.create();
+        AlertDialog dialog = builder.create();
         dialog.show();
     }
 
     public void deleteAp(MoveImageView imageView) {
+        if (!isEdit)
+            return;
+
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         builder.setMessage("선택한 마커를 삭제하시겠습니까?");
 
@@ -931,7 +953,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             public void onClick(DialogInterface dialog, int id) {
                 int position = listApImage.indexOf(imageView);
 
-                apHelper.deleteAp(apHashMap.get(imageView.getMacAddress()));
+                apHelper.deleteAp(imageView.getMacAddress());
 
                 listApImage.remove(position);
                 contentBinding.imgMarker.removeView(imageView);
@@ -967,9 +989,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
             Log.d("스케일", scale + "");
 
-
             if (srcX > dst[0] - ImageUtils.getDp(this, 50 * scale) && srcX < dst[0] + ImageUtils.getDp(this, 50 * scale) && srcY > dst[1] - ImageUtils.getDp(this, 50 * scale) && srcY < dst[1] + ImageUtils.getDp(this, 50 * scale)) {
-                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_ap_search);
+                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_marker);
                 imageView.setImageBitmap(bitmap);
                 return imageView;
             }
@@ -985,8 +1006,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     public void setPointDB(MoveImageView imageView, float[] meterPoint) {
-        Log.d("저장 포지션", "(" + meterPoint[0] + "," + meterPoint[1] + ")");
-        apHelper.updateApPoint(apHashMap.get(imageView.getMacAddress()).getSeq(), meterPoint);
+        Log.d("저장 포지션", imageView.getMacAddress() + " - (" + meterPoint[0] + "," + meterPoint[1] + ")");
+        apHelper.updateApPoint(imageView.getMacAddress(), meterPoint);
+        apHashMap.get(imageView.getMacAddress()).setPoint(new Point(meterPoint[0], meterPoint[1]));
     }
 //    ===========================================================================================
 
@@ -1113,8 +1135,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             }
 
             algorithmSettingCsvManager = new CsvManager(fileName + "_AlgorithmSetting.csv");
-            algorithmSettingCsvManager.Write("일괄 통신 요청 개수,AP 총 요청 개수,DB SCAN 반경(M),알고리즘 조합 개수,DB SCAN 필터링 기준,Reliability 임계치(m)");
-            algorithmSettingCsvManager.Write(useScanCount + "," + apScanCount + "," + dbScanDistance + "," + combination + "," + dbScanFilter + "," + stdReliability);
+            algorithmSettingCsvManager.Write("RTT 정보 소멸 시간(ms),일괄 통신 요청 개수,AP 총 요청 개수,DB SCAN 반경(M),알고리즘 조합 개수,DB SCAN 필터링 기준,Reliability 임계치(m)");
+            algorithmSettingCsvManager.Write(removeInterval + "," + useScanCount + "," + apScanCount + "," + dbScanDistance + "," + combination + "," + dbScanFilter + "," + stdReliability);
         }
         startTimer();
 
@@ -1846,10 +1868,10 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 Point start = nodeArrayList.get(link.getNode_start() - 1).getPoint();
                 Point end = nodeArrayList.get(link.getNode_end() - 1).getPoint();
 
-                double x1 = (start.getX() - LEFT_BLANK_PIXEL) * PIXEL_PER_METER;
-                double y1 = (MAP_HEIGHT - start.getY() - BOTTOM_BLANK_PIXEL) * PIXEL_PER_METER;
-                double x2 = (end.getX() - LEFT_BLANK_PIXEL) * PIXEL_PER_METER;
-                double y2 = (MAP_HEIGHT - end.getY() - BOTTOM_BLANK_PIXEL) * PIXEL_PER_METER;
+                double x1 = (start.getX() - LEFT_BLANK_PIXEL) * PIXEL_PER_METER_WIDTH;
+                double y1 = (MAP_HEIGHT - start.getY() - BOTTOM_BLANK_PIXEL) * PIXEL_PER_METER_HEIGHT;
+                double x2 = (end.getX() - LEFT_BLANK_PIXEL) * PIXEL_PER_METER_WIDTH;
+                double y2 = (MAP_HEIGHT - end.getY() - BOTTOM_BLANK_PIXEL) * PIXEL_PER_METER_HEIGHT;
                 double px = point.getX();
                 double py = point.getY();
 

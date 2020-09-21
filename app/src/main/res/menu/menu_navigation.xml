@@ -15,12 +15,12 @@
         <item
             android:id="@+id/nav_setting_paramter"
             android:icon="@drawable/ic_settings"
-            android:title="알고리즘 변수 설정" />
+            android:title="알고리즘 설정" />
 
         <item
             android:id="@+id/nav_setting_logging"
             android:icon="@drawable/ic_settings"
-            android:title="로깅 데이터 설정" />
+            android:title="로깅 설정" />
     </group>
 
 </menu>

@@ -6,8 +6,8 @@ android {
         applicationId "com.coretec.sensing"
         minSdkVersion 28
         targetSdkVersion 29
-        versionCode 1
-        versionName "1.0"
+        versionCode 11
+        versionName "1.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -25,7 +25,7 @@ android {
 
     signingConfigs {
         release {
-            storeFile file('C:\\Users\\qkrdl\\Desktop\\Sensing\\gradle\\sensing.jks')
+            storeFile file('C:\\Users\\PIH\\Desktop\\Android ProJect\\ProJect Keystore\\sensing.jks')
             // 기준은 App 폴더 기준이다.
             storePassword "core4211"
             keyAlias "sensing"
@@ -96,4 +96,7 @@ dependencies {
 
     //조합 수 구하는 라이브러리
     implementation 'com.github.dakusui:combinatoradix:0.8.2'
+
+    //macAddress EditText 라이브러리
+    implementation 'com.github.phearme:macaddress-edittext:1.0.1'
 }

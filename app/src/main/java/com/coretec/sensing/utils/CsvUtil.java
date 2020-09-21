@@ -35,11 +35,11 @@ public class CsvUtil {
             }
             String[] str = readLine.split(",");
 
-            int seq = Integer.parseInt(str[0]);
-            String name = str[1];
-            String macAddress = str[2];
-            double pointX = Double.parseDouble(str[3]);
-            double pointY = Double.parseDouble(str[4]);
+            int seq = Integer.parseInt(str[0].replaceAll("\\\"", ""));
+            String name = str[1].replaceAll("\\\"", "");
+            String macAddress = str[2].replaceAll("\\\"", "");
+            double pointX = Double.parseDouble(str[3].replaceAll("\\\"", ""));
+            double pointY = Double.parseDouble(str[4].replaceAll("\\\"", ""));
 
             apArrayList.add(new Ap(seq, name, macAddress, new Point(pointX, pointY)));
         }
@@ -67,10 +67,10 @@ public class CsvUtil {
             }
             String[] str = readLine.split(",");
 
-            int seq = Integer.parseInt(str[0]);
-            String name = str[1];
-            double pointX = Double.parseDouble(str[2]);
-            double pointY = Double.parseDouble(str[3]);
+            int seq = Integer.parseInt(str[0].replaceAll("\\\"", ""));
+            String name = str[1].replaceAll("\\\"", "");
+            double pointX = Double.parseDouble(str[2].replaceAll("\\\"", ""));
+            double pointY = Double.parseDouble(str[3].replaceAll("\\\"", ""));
 
             poiArrayList.add(new Poi(seq, name, new Point(pointX, pointY)));
         }
@@ -98,9 +98,9 @@ public class CsvUtil {
             }
             String[] str = readLine.split(",");
 
-            int seq = Integer.parseInt(str[0]);
-            double pointX = Double.parseDouble(str[1]);
-            double pointY = Double.parseDouble(str[2]);
+            int seq = Integer.parseInt(str[0].replaceAll("\\\"", ""));
+            double pointX = Double.parseDouble(str[1].replaceAll("\\\"", ""));
+            double pointY = Double.parseDouble(str[2].replaceAll("\\\"", ""));
 
             nodeArrayList.add(new Node(seq, new Point(pointX, pointY)));
         }
@@ -128,11 +128,11 @@ public class CsvUtil {
             }
             String[] str = readLine.split(",");
 
-            int seq = Integer.parseInt(str[0]);
-            int startNode = Integer.parseInt(str[1]);
-            int endNode = Integer.parseInt(str[2]);
-            int weightP = Integer.parseInt(str[3]);
-            double weightM = Double.parseDouble(str[4]);
+            int seq = Integer.parseInt(str[0].replaceAll("\\\"", ""));
+            int startNode = Integer.parseInt(str[1].replaceAll("\\\"", ""));
+            int endNode = Integer.parseInt(str[2].replaceAll("\\\"", ""));
+            int weightP = Integer.parseInt(str[3].replaceAll("\\\"", ""));
+            double weightM = Double.parseDouble(str[4].replaceAll("\\\"", ""));
 
             linkArrayList.add(new Link(seq, startNode, endNode, weightP, weightM));
         }

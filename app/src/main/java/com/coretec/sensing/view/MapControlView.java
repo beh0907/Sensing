@@ -32,8 +32,10 @@ import static com.coretec.sensing.utils.Const.BOTTOM_BLANK_PIXEL;
 import static com.coretec.sensing.utils.Const.LEFT_BLANK_PIXEL;
 import static com.coretec.sensing.utils.Const.MAP_HEIGHT;
 import static com.coretec.sensing.utils.Const.MAP_WIDTH;
-import static com.coretec.sensing.utils.Const.METER_PER_PIXEL;
-import static com.coretec.sensing.utils.Const.PIXEL_PER_METER;
+import static com.coretec.sensing.utils.Const.METER_PER_PIXEL_HEIGHT;
+import static com.coretec.sensing.utils.Const.METER_PER_PIXEL_WIDTH;
+import static com.coretec.sensing.utils.Const.PIXEL_PER_METER_HEIGHT;
+import static com.coretec.sensing.utils.Const.PIXEL_PER_METER_WIDTH;
 
 public class MapControlView extends AppCompatImageView implements View.OnTouchListener {
 
@@ -164,7 +166,7 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
 //        double x1 = (point[0] - LEFT_BLANK_PIXEL) * PIXEL_PER_METER;
 //        double y1 = (MAP_HEIGHT - point[1] - BOTTOM_BLANK_PIXEL) * PIXEL_PER_METER;
 
-        return new float[]{(float) ((point[0] - LEFT_BLANK_PIXEL) * PIXEL_PER_METER), (float) ((MAP_HEIGHT - point[1] - BOTTOM_BLANK_PIXEL) * PIXEL_PER_METER)};
+        return new float[]{(float) ((point[0] - LEFT_BLANK_PIXEL) * PIXEL_PER_METER_WIDTH), (float) ((MAP_HEIGHT - point[1] - BOTTOM_BLANK_PIXEL) * PIXEL_PER_METER_HEIGHT)};
     }
 
     public int[] pointMeterToPixel(double[] point) {
@@ -174,8 +176,8 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
         float scaleX = (parentWidth / MAP_WIDTH);
         float scaleY = (parentHeight / MAP_HEIGHT);
 
-        point[0] = (point[0] * METER_PER_PIXEL) + LEFT_BLANK_PIXEL;
-        point[1] = (point[1] * METER_PER_PIXEL) + BOTTOM_BLANK_PIXEL;
+        point[0] = (point[0] * METER_PER_PIXEL_WIDTH) + LEFT_BLANK_PIXEL;
+        point[1] = (point[1] * METER_PER_PIXEL_HEIGHT) + BOTTOM_BLANK_PIXEL;
 
         point[0] *= scaleX;
         point[1] = parentHeight - (point[1] * scaleY);
@@ -222,19 +224,19 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
 
                 moveImageView = mapActivity.getApPosition(event.getX(), event.getY(), matrix, value[0]);
 
-                if (moveImageView != null)
-                    startTimeout();
+//                if (moveImageView != null)
+                startTimeout();
                 break;
 
             case MotionEvent.ACTION_MOVE:
-                if (moveImageView != null) {
-                    if (Math.abs(event.getX() - start.x) > scaledTouchSlope || Math.abs(start.y - event.getY()) > scaledTouchSlope)
-                        stopTimeout();
+                if (Math.abs(event.getX() - start.x) > scaledTouchSlope || Math.abs(start.y - event.getY()) > scaledTouchSlope)
+                    stopTimeout();
 
+                if (moveImageView != null) {
                     value = new float[9];
                     matrix.getValues(value);
 
-                    float[] pixelPoint = pointTouchToPixel(event.getX(), event.getY(), matrix);
+                    float[] pixelPoint = pointTouchToPixel(event.getX(), event.getY() + 300, matrix);
 
                     mapActivity.setApPosition(moveImageView, pixelPoint);
                     return true;
@@ -258,16 +260,18 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
                 break;
 
             case MotionEvent.ACTION_UP:
+                stopTimeout();
+
                 value = new float[9];
                 matrix.getValues(value);
-                float[] pixelPoint = pointTouchToPixel(event.getX(), event.getY(), matrix);
+                float[] pixelPoint = pointTouchToPixel(event.getX(), event.getY() + 300, matrix);
                 float[] meterPoint = pointPixelToMeter(pixelPoint);
 
                 Log.d("클릭 업 좌표 픽셀", pixelPoint[0] + "-" + pixelPoint[1]);
                 Log.d("클릭 업 좌표 미터", meterPoint[0] + "-" + meterPoint[1]);
 
                 if (moveImageView != null) {
-                    Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_ap);
+                    Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_marker);
                     moveImageView.setImageBitmap(bitmap);
 
                     mapActivity.setPointDB(moveImageView, meterPoint);
@@ -475,18 +479,24 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
             if (moveImageView != null) {
                 moveImageView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 mapActivity.deleteAp(moveImageView);
+            } else {
+                float[] pixelPoint = pointTouchToPixel(start.x, start.y, savedMatrix);
+                float[] meterPoint = pointPixelToMeter(pixelPoint);
 
-                //터치 이벤트 강제로 종료
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Instrumentation instrumentation = new Instrumentation();
-                        MotionEvent event = MotionEvent.obtain(0, 0,
-                                MotionEvent.ACTION_UP, 0, 0, 0);
-                        instrumentation.sendPointerSync(event);
-                    }
-                }).start();
+                mapActivity.insertAp(pixelPoint, meterPoint);
             }
+
+
+            //터치 이벤트 강제로 종료
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Instrumentation instrumentation = new Instrumentation();
+                    MotionEvent event = MotionEvent.obtain(0, 0,
+                            MotionEvent.ACTION_UP, 0, 0, 0);
+                    instrumentation.sendPointerSync(event);
+                }
+            }).start();
         }
     }
 

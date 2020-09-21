@@ -51,13 +51,13 @@ public class ApHelper {
         return apHashMap;
     }
 
-    public void updateApPoint(int seq, float[] meterPoint) {
+    public void updateApPoint(String macAddress, float[] meterPoint) {
         ContentValues values = new ContentValues();
 
         values.put(KEY_MAP_X, meterPoint[0]);
         values.put(KEY_MAP_Y, meterPoint[1]);
 
-        database.update(TABLE_AP, values, KEY_SEQ + "=" + seq, null);
+        database.update(TABLE_AP, values, KEY_MAC_ADDRESS + "=?", new String[]{macAddress});
     }
 
     public void insertApAll(ArrayList<Ap> apArrayList) {
@@ -87,8 +87,8 @@ public class ApHelper {
         database.insert(TABLE_AP, "", values);
     }
 
-    public void deleteAp(Ap ap) {
-        database.delete(TABLE_AP, KEY_SEQ + "=?", new String[]{ap.getSeq() + ""});
+    public void deleteAp(String macAddress) {
+        database.delete(TABLE_AP, KEY_MAC_ADDRESS + "=?", new String[]{macAddress});
     }
 
     public void deleteAll() {
