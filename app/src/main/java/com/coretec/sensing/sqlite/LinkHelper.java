@@ -15,8 +15,8 @@ public class LinkHelper {
     private static final String KEY_SEQ = "seq";
     private static final String KEY_NODE_START = "node_start";
     private static final String KEY_NODE_END = "node_end";
-    private static final String KEY_WEIGHT_P = "weight(p)";
-    private static final String KEY_WEIGHT_M = "weight(m)";
+    private static final String KEY_WEIGHT_P = "weight_p";
+    private static final String KEY_WEIGHT_M = "weight_m";
 
     private SQLiteDatabase database;
 
