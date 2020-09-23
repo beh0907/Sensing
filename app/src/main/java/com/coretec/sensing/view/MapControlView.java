@@ -176,14 +176,25 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
         float scaleX = (parentWidth / MAP_WIDTH);
         float scaleY = (parentHeight / MAP_HEIGHT);
 
+
+//        Log.d("로딩된 지도 사이즈", getDrawable().getIntrinsicWidth() + "-" + getDrawable().getIntrinsicHeight());
+//        Log.d("사이즈1", MAP_WIDTH + "-" + MAP_HEIGHT);
+//        Log.d("좌표 변환1", point[0] + "-" + point[1]);
+
         point[0] = (point[0] * PIXEL_PER_METER_WIDTH) + LEFT_BLANK_PIXEL;
         point[1] = (point[1] * PIXEL_PER_METER_HEIGHT) + BOTTOM_BLANK_PIXEL;
+
+//        Log.d("좌표 변환2", point[0] + "-" + point[1]);
 
         point[0] *= scaleX;
         point[1] = parentHeight - (point[1] * scaleY);
 
+//        Log.d("좌표 변환3", point[0] + "-" + point[1]);
+
         point[0] /= scaleX;
         point[1] /= scaleY;
+
+//        Log.d("좌표 변환4", point[0] + "-" + point[1]);
 
         return new int[]{(int) point[0], (int) point[1]};
     }
@@ -203,8 +214,6 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
         float scaleX = (parentWidth / MAP_WIDTH);
         float scaleY = (parentHeight / MAP_HEIGHT);
 
-        Log.d("원본 이미지 사이즈", MAP_WIDTH + " - " + MAP_HEIGHT);
-        Log.d("로딩 이미지 사이즈", parentWidth + " - " + parentHeight);
 
         touchLocation[0] /= scaleX;
         touchLocation[1] /= scaleY;
@@ -269,9 +278,6 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
                 matrix.getValues(value);
                 float[] pixelPoint = pointTouchToPixel(event.getX(), event.getY() + 150, matrix);
                 float[] meterPoint = pointPixelToMeter(pixelPoint);
-
-                Log.d("클릭 업 좌표 픽셀", pixelPoint[0] + "-" + pixelPoint[1]);
-                Log.d("클릭 업 좌표 미터", meterPoint[0] + "-" + meterPoint[1]);
 
                 if (moveImageView != null) {
                     Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_marker);
@@ -447,6 +453,7 @@ public class MapControlView extends AppCompatImageView implements View.OnTouchLi
                     value[0] = value[4] = (float) height / imageHeight;
             }
         }
+
         // 원래부터 작은 얘들은 본래 크기보다 작게 하지 않도록
         else {
             if (value[0] < 1) value[0] = 1;

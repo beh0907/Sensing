@@ -111,7 +111,7 @@
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:inputType="numberDecimal"
-                android:text="50" />
+                android:text="100" />
         </LinearLayout>
 
         <CheckBox

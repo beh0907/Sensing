@@ -37,6 +37,10 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".activity.Map2Activity"
+            android:theme="@style/AppTheme.NoActionBar">
+        </activity>
+        <activity
             android:name=".activity.LocationActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity

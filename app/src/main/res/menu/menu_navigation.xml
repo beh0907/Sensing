@@ -10,7 +10,12 @@
         <item
             android:id="@+id/nav_map"
             android:icon="@drawable/ic_map"
-            android:title="2D Map" />
+            android:title="평택역" />
+
+        <item
+            android:id="@+id/nav_map2"
+            android:icon="@drawable/ic_map"
+            android:title="11동 지하주차장" />
 
         <item
             android:id="@+id/nav_setting_paramter"

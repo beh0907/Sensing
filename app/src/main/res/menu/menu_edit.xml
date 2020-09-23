@@ -7,4 +7,10 @@
         android:icon="@drawable/ic_edit"
         android:title=""
         app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/item_info"
+        android:icon="@drawable/ic_info"
+        android:title=""
+        app:showAsAction="ifRoom" />
 </menu>

@@ -6,7 +6,7 @@
 
         <variable
             name="activity"
-            type="com.coretec.sensing.activity.LocationActivity" />
+            type="com.coretec.sensing.activity.MapActivity" />
     </data>
 
     <LinearLayout

@@ -79,8 +79,14 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
                 return false;
 
             case R.id.nav_map:
-                Intent bookmark = new Intent(this, MapActivity.class);
-                startActivity(bookmark);
+                Intent intent = new Intent(this, MapActivity.class);
+                startActivity(intent);
+                finish();
+                return false;
+
+            case R.id.nav_map2:
+                intent = new Intent(this, Map2Activity.class);
+                startActivity(intent);
                 finish();
                 return false;
         }
@@ -329,7 +335,7 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
 
         isCreateFile = false;
         isScan = false;
-        contentBinding.editPtnum.setText("0");
+        contentBinding.editPtnum.setText("1");
         contentBinding.btnStart.setText("START");
         contentBinding.btnStart.setChecked(false);
 //        contentBinding.btnMove.setText("MOVE");
@@ -355,6 +361,7 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
             rttFragment.rttStopScanning();
             bluetoothFragment.bluetoothStopScanning();
             sensorFragment.stopSensor();
+            lteFragment.stopScanning();
         } catch (Exception e) {
 
         }

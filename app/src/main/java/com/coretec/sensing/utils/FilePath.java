@@ -8,9 +8,9 @@ import com.coretec.sensing.BuildConfig;
 
 public class FilePath {
     public static final String DB_PATH = "/data/data/" + BuildConfig.APPLICATION_ID + "/databases/";
-    public static final String DB_NAME = "rtt3.db";
+    public static String DB_NAME = "rtt3.db";
 
-    public static final String FILE_ROOT = "/storage/emulated/0/Android/data/" + BuildConfig.APPLICATION_ID + "/files/";
-
-    public static final String SERVER_LINK = "http://devcoretec.iptime.org:82/rtt/";
+    public static void setDbName(String dbName) {
+        DB_NAME = dbName;
+    }
 }

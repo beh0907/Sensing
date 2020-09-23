@@ -15,6 +15,25 @@ import java.util.List;
 
 public class CsvUtil {
 
+    public static boolean readMapSettingCsv(String filePath) {
+        List<String> list = new ArrayList<>();
+        try {
+            list = Files.readAllLines(Paths.get(filePath), Charset.forName("EUC-KR"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        if (list.size() < 2)
+            return false;
+
+
+        String[] str = list.get(1).split(",");
+
+        Const.setMapParam(Float.parseFloat(str[0].replaceAll("\\\"", "")), Float.parseFloat(str[1].replaceAll("\\\"", "")), Double.parseDouble(str[2].replaceAll("\\\"", "")), Double.parseDouble(str[3].replaceAll("\\\"", "")));
+
+        return true;
+    }
+
     public static ArrayList<Ap> readApCsv(String filePath) {
 
         ArrayList<Ap> apArrayList = new ArrayList<>();

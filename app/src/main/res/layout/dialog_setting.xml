@@ -142,7 +142,7 @@
                 android:id="@+id/radioDbScan"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="DB scan"
+                android:text="DBSCAN"
                 android:textSize="16sp" />
 
             <RadioButton

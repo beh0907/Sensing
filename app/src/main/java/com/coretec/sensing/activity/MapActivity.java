@@ -29,7 +29,6 @@ import android.telephony.CellInfo;
 import android.telephony.CellInfoLte;
 import android.telephony.CellSignalStrengthLte;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -61,9 +60,11 @@ import com.coretec.sensing.sqlite.NodeHelper;
 import com.coretec.sensing.sqlite.PoiHelper;
 import com.coretec.sensing.utils.ArrayCopy;
 import com.coretec.sensing.utils.Calculation;
+import com.coretec.sensing.utils.Const;
 import com.coretec.sensing.utils.CsvManager;
 import com.coretec.sensing.utils.CsvUtil;
 import com.coretec.sensing.utils.DateUtils;
+import com.coretec.sensing.utils.FilePath;
 import com.coretec.sensing.utils.GpsTracker;
 import com.coretec.sensing.utils.ImageUtils;
 import com.coretec.sensing.utils.PrefManager;
@@ -176,7 +177,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     //RTT 정보 요청 인터벌
     private int blueToothInterval = 1000;
     //RTT 정보 요청 인터벌
-    private int sensorInterval = 50;
+    private int sensorInterval = 100;
     //RTT 정보 요청 인터벌
     private int lteInterval = 1000;
 
@@ -260,6 +261,12 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     //wifi, rtt 작성용 버퍼
     private Map<String, Rtt> buffer;
 
+    //AP위치 수정 기능 활성화 여부
+    private boolean isEdit = false;
+    //정보 조회 기능 활성화 여부
+    private boolean isInfo = false;
+    private Menu menu;
+
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
@@ -267,12 +274,18 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         activityBinding.drawerLayout.closeDrawer(GravityCompat.START);
         switch (id) {
             case R.id.nav_logging:
-                Intent logging = new Intent(this, LoggingActivity.class);
-                startActivity(logging);
+                Intent intent = new Intent(this, LoggingActivity.class);
+                startActivity(intent);
                 finish();
                 return false;
 
             case R.id.nav_map:
+                return false;
+
+            case R.id.nav_map2:
+                intent = new Intent(this, Map2Activity.class);
+                startActivity(intent);
+                finish();
                 return false;
 
             case R.id.nav_setting_paramter:
@@ -286,9 +299,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         return true;
     }
 
-    //AP위치 수정 기능 활성화 여부
-    private boolean isEdit = false;
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -301,18 +311,33 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                     activityBinding.drawerLayout.openDrawer(activityBinding.navView);
                 }
                 return true;
+
             case R.id.item_edit:
                 isEdit = !isEdit;
 
-                if (isEdit)
-                    item.setIcon(R.drawable.ic_edit_used);
-                else {
+                if (isEdit) {
+                    item.setIcon(R.drawable.ic_edit_select);
+                    menu.findItem(R.id.item_info).setIcon(R.drawable.ic_info);
+                    isInfo = false;
+                } else {
                     item.setIcon(R.drawable.ic_edit);
 
                     CsvUtil.writeApCsv(new ArrayList<>(apHashMap.values()), DBPath);
                     CsvUtil.writePoiCsv(poiArrayList, DBPath);
                     CsvUtil.writeNodeCsv(nodeArrayList, DBPath);
                     CsvUtil.writeLinkCsv(linkArrayList, DBPath);
+                }
+                break;
+
+            case R.id.item_info:
+                isInfo = !isInfo;
+
+                if (isInfo) {
+                    item.setIcon(R.drawable.ic_info_select);
+                    menu.findItem(R.id.item_edit).setIcon(R.drawable.ic_edit);
+                    isEdit = false;
+                } else {
+                    item.setIcon(R.drawable.ic_info);
                 }
                 break;
         }
@@ -323,6 +348,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu_edit, menu);
+
+        this.menu = menu;
         return true;
     }
 
@@ -352,9 +379,11 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     private void downloadDB() {
+        FilePath.setDbName("rtt3.db");
+
         PrefManager pref = new PrefManager(this);
-        if (!pref.isDownloadDB())
-            DBDownload.copyDB(pref, this);
+//        if (!pref.isDownloadDB())
+        DBDownload.copyDB(pref, this);
     }
 
     public void showSettingParameterDialog(@NonNull Context context) {
@@ -546,14 +575,14 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
                 init();
 
+                initPath();
+                loadMapImage();
+                setBackgroundPosition();
+
                 initRtt();
                 initBluetooth();
                 initSensor();
                 initLte();
-
-                initPath();
-                loadMapImage();
-                setBackgroundPosition();
 
                 for (Ap ap : apHashMap.values()) {
                     int[] point = contentBinding.imgMap.pointMeterToPixel(new double[]{ap.getPoint().getX(), ap.getPoint().getY()});
@@ -748,7 +777,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 //        options.inDither = false;
         options.inPreferredConfig = Bitmap.Config.RGB_565;
 
+        Const.setMapParam(2411f, 2040f, 21.5d, 22.4d);
         Bitmap result = BitmapFactory.decodeResource(resource, R.drawable.bg_map3, options);
+
         contentBinding.imgMap.setImageBitmap(result);
 //        contentBinding.imgMap.initPath();
     }
@@ -759,8 +790,12 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 //        options.inScaled = false;
 //        options.inPreferredConfig = Bitmap.Config.RGB_565;
 //
-//        Bitmap result = BitmapFactory.decodeFile(MAPPath + "bg_map.png", options);
+//        if (!CsvUtil.readMapSettingCsv(MAPPath + "setting.csv")) {
+//            Toast.makeText(this,"설정 데이터가 사용이 불가능합니다.", Toast.LENGTH_SHORT).show();
+//            finish();
+//        }
 //
+//        Bitmap result = BitmapFactory.decodeFile(MAPPath + "bg_map.png", options);
 //        contentBinding.imgMap.setImageBitmap(result);
 //    }
 
@@ -895,6 +930,39 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             myNearLocationView.initPosition();
     }
 
+    public void searchAp(Ap ap) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_ap, null);
+
+        final EditText editApName = dialogView.findViewById(R.id.editApName);
+        final EditText MacAddressEditText = dialogView.findViewById(R.id.editApMac);
+        final EditText txtPointX = dialogView.findViewById(R.id.txtPointX);
+        final EditText txtPointY = dialogView.findViewById(R.id.txtPointY);
+
+        editApName.setText(ap.getName());
+        MacAddressEditText.setText(ap.getMacAddress());
+        txtPointX.setText(ap.getPoint().getX() + "");
+        txtPointY.setText(ap.getPoint().getY() + "");
+
+        editApName.setEnabled(false);
+        MacAddressEditText.setEnabled(false);
+
+        builder.setTitle("AP 정보");
+        builder.setView(dialogView);
+        builder.setCancelable(false);
+
+        builder.setNegativeButton("닫기", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int id) {
+                dialog.dismiss();
+            }
+        });
+        builder.setCancelable(false);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
     public void insertAp(float[] pixelPoint, float[] meterPoint) {
         if (!isEdit)
             return;
@@ -911,17 +979,22 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         txtPointX.setText(meterPoint[0] + "");
         txtPointY.setText(meterPoint[1] + "");
 
-        builder.setTitle("마커 추가");
+        builder.setTitle("AP 추가");
         builder.setView(dialogView);
         builder.setCancelable(false);
 
         builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
+                if (editApName.getText().length() == 0 || MacAddressEditText.getText().length() == 0)
+                    return;
+
                 Ap ap = new Ap(listApImage.size() + 1, editApName.getText().toString(), MacAddressEditText.getText().toString(), new Point(meterPoint[0], meterPoint[1]));
 
                 addAp((int) pixelPoint[0], (int) pixelPoint[1], ap.getMacAddress());
                 apHelper.insertAp(ap);
+                apHashMap.put(ap.getMacAddress(), ap);
+                dialog.dismiss();
             }
         });
 
@@ -967,18 +1040,24 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     //터치 좌표를 기준으로 AP 검색
-    public MoveImageView getApPosition(float[] dst, float scale) {
-        if (!isEdit)
+    public MoveImageView getApPosition(float[] src, float scale) {
+        if (!isEdit && !isInfo)
             return null;
 
         for (MoveImageView imageView : listApImage) {
-
             int[] posLocation = imageView.getPosLocation();
 
-            if (posLocation[0] > dst[0] - ImageUtils.getDp(this, 20 / scale) && posLocation[0] < dst[0] + ImageUtils.getDp(this, 20 / scale) && posLocation[1] > dst[1] - ImageUtils.getDp(this, 30 / scale) && posLocation[1] < dst[1] + ImageUtils.getDp(this, 30 / scale)) {
-                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_marker);
-                imageView.setImageBitmap(bitmap);
-                return imageView;
+            if (posLocation[0] > src[0] - ImageUtils.getDp(this, 20 / scale) && posLocation[0] < src[0] + ImageUtils.getDp(this, 20 / scale) && posLocation[1] > src[1] && posLocation[1] < src[1] + ImageUtils.getDp(this, 40 / scale)) {
+                if (isEdit) {
+                    Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_marker);
+                    imageView.setImageBitmap(bitmap);
+                    return imageView;
+                }
+
+                if (isInfo) {
+                    searchAp(apHashMap.get(imageView.getMacAddress()));
+                    return null;
+                }
             }
         }
         return null;
@@ -992,7 +1071,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     public void setPointDB(MoveImageView imageView, float[] meterPoint) {
-        Log.d("저장 포지션", imageView.getMacAddress() + " - (" + meterPoint[0] + "," + meterPoint[1] + ")");
+//        Log.d("저장 포지션", imageView.getMacAddress() + " - (" + meterPoint[0] + "," + meterPoint[1] + ")");
         apHelper.updateApPoint(imageView.getMacAddress(), meterPoint);
         apHashMap.get(imageView.getMacAddress()).setPoint(new Point(meterPoint[0], meterPoint[1]));
     }
@@ -1196,8 +1275,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             Poi poiStart = (Poi) data.getSerializableExtra("poiStart");
             Poi poiEnd = (Poi) data.getSerializableExtra("poiEnd");
 
-            Log.d("시작 POI", poiStart.toString());
-            Log.d("도착 POI", poiEnd.toString());
+//            Log.d("시작 POI", poiStart.toString());
+//            Log.d("도착 POI", poiEnd.toString());
 
             searchPath(poiStart, poiEnd);
         }
@@ -1875,8 +1954,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 }
             }
 
-            Log.d("가장 가까운 링크", nearestLink.toString());
-            Log.d("가장 가까운 링크 거리", distance + "m");
+//            Log.d("가장 가까운 링크", nearestLink.toString());
+//            Log.d("가장 가까운 링크 거리", distance + "m");
 
             setMyLocationView(myNearLocationView, location, R.drawable.ic_my_location4);
 
