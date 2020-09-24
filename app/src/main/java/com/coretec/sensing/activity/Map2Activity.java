@@ -221,6 +221,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
 
     //내 위치 및 링크 연계 조정위치 객체
     private Point myLocation;
+    private Point myLocation2;
     private Point nearLocation;
 
     //////////////////////////////////////////////////////////////////////////////
@@ -1237,7 +1238,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
                 rttCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,RttStatus,Distance(Mm),DistanceStdDev(Mm),Rssi,timestamp,NumAttemptedMeasurements,NumSuccessfulMeasurements");
 
                 myLocationCsvManager = new CsvManager(fileName + "_MyLocation.csv");
-                myLocationCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,AP1 MAC,AP1 RANGE,AP2 MAC,AP2 RANGE,AP3 MAC,AP3 RANGE,AP4 MAC,AP4 RANGE,AP5 MAC,AP5 RANGE,AP6 MAC,AP6 RANGE,AP7 MAC,AP7 RANGE,AP8 MAC,AP8 RANGE,AP9 MAC,AP9 RANGE,AP10 MAC,AP10 RANGE,Median (X),Median (Y),DBscan (X),DBscan (Y),Reliability (X),Reliability (Y)");
+                myLocationCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,AP1 MAC,AP1 RANGE,AP2 MAC,AP2 RANGE,AP3 MAC,AP3 RANGE,AP4 MAC,AP4 RANGE,AP5 MAC,AP5 RANGE,AP6 MAC,AP6 RANGE,AP7 MAC,AP7 RANGE,AP8 MAC,AP8 RANGE,AP9 MAC,AP9 RANGE,AP10 MAC,AP10 RANGE,Median (X),Median (Y),DBscan (X),DBscan (Y),Reliability (X),Reliability (Y),Link (X),Link (Y)");
 
             }
 
@@ -1980,12 +1981,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
             }
 
             if (myLocationCsvManager != null)
-                myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + apData + medianLocation.getX() + "," + medianLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY() + "," + reliabilityLocation.getX() + "," + reliabilityLocation.getY());
-
-            contentBinding.txtTime.setText(DateUtils.getCurrentCsvFileName());
-            contentBinding.txtLocation.setText(medianLocation.getX() + "m - " + medianLocation.getY() + "m");
-            contentBinding.txtLocation2.setText(dbscanLocation.getX() + "m - " + dbscanLocation.getY() + "m");
-            contentBinding.txtLocation3.setText(reliabilityLocation.getX() + "m - " + reliabilityLocation.getY() + "m");
+                myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + apData + medianLocation.getX() + "," + medianLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY() + "," + reliabilityLocation.getX() + "," + reliabilityLocation.getY() + "," + myLocation2.getX() + "," + myLocation2.getY());
 
 //            list.clear();
 //            accessPointsSupporting80211mcInfo.clear();
@@ -1993,7 +1989,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
 
         //a,b의 포인트 좌표를 픽셀에서 M단위로 수정해야함
         private Link getNearestLink(ArrayList<Node> nodeArrayList, ArrayList<Link> linkArrayList, Point point) {
-            Point location = new Point();
+            myLocation2 = new Point();
             double distance = Double.MAX_VALUE;
             Link nearestLink = null;
 
@@ -2014,14 +2010,14 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
                 if (distance > temp) {
                     distance = temp;
                     nearestLink = link;
-                    location = nearLocation;
+                    myLocation2 = nearLocation;
                 }
             }
 
 //            Log.d("가장 가까운 링크", nearestLink.toString());
 //            Log.d("가장 가까운 링크 거리", distance + "m");
 
-            setMyLocationView4(location);
+            setMyLocationView4(myLocation2);
 
             return nearestLink;
         }

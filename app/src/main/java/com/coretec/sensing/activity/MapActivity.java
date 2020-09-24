@@ -1998,16 +1998,6 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             if (myLocationCsvManager != null)
                 myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + apData + medianLocation.getX() + "," + medianLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY() + "," + reliabilityLocation.getX() + "," + reliabilityLocation.getY() + "," + myLocation2.getX() + "," + myLocation2.getY());
 
-            contentBinding.txtTime.setText(DateUtils.getCurrentCsvFileName());
-            contentBinding.txtLocation.setText(medianLocation.getX() + "m - " + medianLocation.getY() + "m");
-            contentBinding.txtLocation2.setText(dbscanLocation.getX() + "m - " + dbscanLocation.getY() + "m");
-            contentBinding.txtLocation3.setText(reliabilityLocation.getX() + "m - " + reliabilityLocation.getY() + "m");
-
-            Log.d("위치1", medianLocation.toString());
-            Log.d("위치2", dbscanLocation.toString());
-            Log.d("위치3", reliabilityLocation.toString());
-            Log.d("위치4", myLocation2.toString());
-
 //            list.clear();
 //            accessPointsSupporting80211mcInfo.clear();
         }
