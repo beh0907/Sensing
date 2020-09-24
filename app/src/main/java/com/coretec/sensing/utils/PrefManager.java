@@ -10,6 +10,7 @@ public class PrefManager {
     private static final String PREF_NAME2 = "rtt2";
     private static final String IS_FIRST_TIME_LAUNCH = "IsFirstTimeLaunch";
     private static final String DATABASE = "database";
+    private static final String DATABASE2 = "database2";
     private SharedPreferences pref;
     private SharedPreferences.Editor editor;
     // shared pref mode
@@ -32,13 +33,13 @@ public class PrefManager {
     }
 
     //로컬DB 파일 다운로드 여부 설정
-    public void setDownloadDB(boolean downloadDB) {
-        editor.putBoolean(DATABASE, downloadDB);
+    public void setDownloadDB(boolean downloadDB, String data) {
+        editor.putBoolean(data, downloadDB);
         editor.apply();
     }
 
     //로컬DB 파일 다운로드 여부 체크
-    public boolean isDownloadDB() {
-        return pref.getBoolean(DATABASE, false);
+    public boolean isDownloadDB(String data) {
+        return pref.getBoolean(data, false);
     }
 }

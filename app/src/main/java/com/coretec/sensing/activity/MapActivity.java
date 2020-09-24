@@ -387,8 +387,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
         FilePath.setDbName("rtt3.db");
 
         PrefManager pref = new PrefManager(this);
-//        if (!pref.isDownloadDB())
-        DBDownload.copyDB(pref, this);
+        if (!pref.isDownloadDB("database"))
+            DBDownload.copyDB(pref, this, "database");
     }
 
     public void showSettingParameterDialog(@NonNull Context context) {

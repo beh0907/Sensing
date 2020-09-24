@@ -24,6 +24,14 @@ public class Const {
         MAP_WIDTH = width;
         MAP_HEIGHT = height;
 
+        LEFT_BLANK_PIXEL = 0f;
+        RIGHT_BLANK_PIXEL = 0f;
+        TOP_BLANK_PIXEL = 0f;
+        BOTTOM_BLANK_PIXEL = 0f;
+
+        MAP_REAL_WIDTH = MAP_WIDTH - LEFT_BLANK_PIXEL - RIGHT_BLANK_PIXEL;
+        MAP_REAL_HEIGHT = MAP_HEIGHT - TOP_BLANK_PIXEL - BOTTOM_BLANK_PIXEL;
+
         PIXEL_PER_METER_WIDTH = fixelPerMeterX;
         METER_PER_PIXEL_WIDTH = 1d / fixelPerMeterX;
 

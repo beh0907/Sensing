@@ -14,7 +14,7 @@ import static com.coretec.sensing.utils.FilePath.DB_NAME;
 import static com.coretec.sensing.utils.FilePath.DB_PATH;
 
 public class DBDownload {
-    public static void copyDB(PrefManager pref, Context context) { //에셋폴더에 저장된 DB파일 프로젝트 폴더에 복사
+    public static void copyDB(PrefManager pref, Context context, String data) { //에셋폴더에 저장된 DB파일 프로젝트 폴더에 복사
         File folder = new File(DB_PATH);
         if (!folder.exists()) {
             folder.mkdirs();
@@ -38,13 +38,13 @@ public class DBDownload {
                 out = new FileOutputStream(ofile);
                 out.write(tmpbyte);
                 out.close();
-                pref.setDownloadDB(true);
+                pref.setDownloadDB(true, data);
             } else {
                 System.out.println("DB있음!!!");
             }
         } catch (IOException e) {
             System.out.println("DB생성 오류 [" + e + "]");
-            pref.setDownloadDB(false);
+            pref.setDownloadDB(false, data);
         }
 
     }

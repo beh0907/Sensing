@@ -383,8 +383,8 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
         FilePath.setDbName("rtt2.db");
 
         PrefManager pref = new PrefManager(this);
-//        if (!pref.isDownloadDB())
-        DBDownload.copyDB(pref, this);
+        if (!pref.isDownloadDB("database2"))
+            DBDownload.copyDB(pref, this, "database2");
     }
 
     public void showSettingParameterDialog(@NonNull Context context) {
@@ -1379,7 +1379,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
 
 //                        accessPointsSupporting80211mcInfo.clear();
 
-                        if (rawResultMap.size() > combination) {
+                        if (rawResultMap.size() >= combination) {
                             rttRangingResultCallback.getMyLocation(new ArrayList(rawResultMap.values()));
 
                             HashMap<String, Double> distanceMap = new HashMap<>();
