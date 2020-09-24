@@ -21,12 +21,12 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.inputmethod.InputMethodManager;
 
+import androidx.appcompat.widget.AppCompatImageView;
+
 import com.coretec.sensing.R;
 import com.coretec.sensing.activity.Map2Activity;
 import com.coretec.sensing.listener.OnTouchMapListener;
 import com.coretec.sensing.utils.Const;
-
-import androidx.appcompat.widget.AppCompatImageView;
 
 import static com.coretec.sensing.utils.Const.BOTTOM_BLANK_PIXEL;
 import static com.coretec.sensing.utils.Const.LEFT_BLANK_PIXEL;
@@ -248,7 +248,7 @@ public class Map2ControlView extends AppCompatImageView implements View.OnTouchL
                     value = new float[9];
                     matrix.getValues(value);
 
-                    float[] pixelPoint = pointTouchToPixel(event.getX(), event.getY() + 150, matrix);
+                    float[] pixelPoint = pointTouchToPixel(event.getX(), event.getY() + 250, matrix);
 
                     map2Activity.setApPosition(moveImageView, pixelPoint);
                     return true;
@@ -276,7 +276,7 @@ public class Map2ControlView extends AppCompatImageView implements View.OnTouchL
 
                 value = new float[9];
                 matrix.getValues(value);
-                float[] pixelPoint = pointTouchToPixel(event.getX(), event.getY() + 150, matrix);
+                float[] pixelPoint = pointTouchToPixel(event.getX(), event.getY() + 250, matrix);
                 float[] meterPoint = pointPixelToMeter(pixelPoint);
 
                 if (moveImageView != null) {

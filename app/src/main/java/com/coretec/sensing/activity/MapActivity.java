@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -29,6 +30,7 @@ import android.telephony.CellInfo;
 import android.telephony.CellInfoLte;
 import android.telephony.CellSignalStrengthLte;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -40,6 +42,16 @@ import android.widget.ImageView;
 import android.widget.NumberPicker;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.databinding.DataBindingUtil;
+import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.coretec.sensing.R;
 import com.coretec.sensing.databinding.ActivityMapBinding;
@@ -86,14 +98,6 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.GravityCompat;
-import androidx.databinding.DataBindingUtil;
-import androidx.drawerlayout.widget.DrawerLayout;
 import lombok.SneakyThrows;
 import no.wtw.android.dijkstra.DijkstraAlgorithm;
 import no.wtw.android.dijkstra.model.Edge;
@@ -220,6 +224,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
     //내 위치 및 링크 연계 조정위치 객체
     private Point myLocation;
+    private Point myLocation2;
     private Point nearLocation;
 
     //////////////////////////////////////////////////////////////////////////////
@@ -571,6 +576,11 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             @SneakyThrows
             @Override
             public void onPermissionGranted() {
+                if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT)) {
+                    Toast.makeText(MapActivity.this, "RTT를 지원하지 않아 일부 기능 사용 시 앱이 종료됩니다.", Toast.LENGTH_SHORT).show();
+//            finish();
+                }
+
                 downloadDB();
 
                 init();
@@ -879,24 +889,87 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
     }
 
     //지정된 좌표 상에 이미지 표출
-    private void setMyLocationView(MoveImageView moveImageView, Point point, int resId) {
+    private void setMyLocationView(Point point) {
         int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
         int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
 
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
-        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), resId);
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_my_location);
 
-        if (moveImageView != null)
-            contentBinding.imgMarker.removeView(moveImageView);
+        if (myMedianLocationView != null)
+            contentBinding.imgMarker.removeView(myMedianLocationView);
 
-        moveImageView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), MapActivity.this);
+        myMedianLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), MapActivity.this);
 
-        moveImageView.setImageBitmap(bitmap);
-        moveImageView.setLayoutParams(layoutParams);
-        moveImageView.setScaleType(ImageView.ScaleType.MATRIX);
+        myMedianLocationView.setImageBitmap(bitmap);
+        myMedianLocationView.setLayoutParams(layoutParams);
+        myMedianLocationView.setScaleType(ImageView.ScaleType.MATRIX);
 
-        contentBinding.imgMarker.addView(moveImageView);
+        contentBinding.imgMarker.addView(myMedianLocationView);
+    }
+
+    //지정된 좌표 상에 이미지 표출
+    private void setMyLocationView2(Point point) {
+        int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
+        int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
+
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_my_location2);
+
+        if (myDbScanLocationView != null)
+            contentBinding.imgMarker.removeView(myDbScanLocationView);
+
+        myDbScanLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), MapActivity.this);
+
+        myDbScanLocationView.setImageBitmap(bitmap);
+        myDbScanLocationView.setLayoutParams(layoutParams);
+        myDbScanLocationView.setScaleType(ImageView.ScaleType.MATRIX);
+
+        contentBinding.imgMarker.addView(myDbScanLocationView);
+    }
+
+    //지정된 좌표 상에 이미지 표출
+    private void setMyLocationView3(Point point) {
+        int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
+        int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
+
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_my_location3);
+
+        if (myReliabilityLocationView != null)
+            contentBinding.imgMarker.removeView(myReliabilityLocationView);
+
+        myReliabilityLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), MapActivity.this);
+
+        myReliabilityLocationView.setImageBitmap(bitmap);
+        myReliabilityLocationView.setLayoutParams(layoutParams);
+        myReliabilityLocationView.setScaleType(ImageView.ScaleType.MATRIX);
+
+        contentBinding.imgMarker.addView(myReliabilityLocationView);
+    }
+
+    //지정된 좌표 상에 이미지 표출
+    private void setMyLocationView4(Point point) {
+        int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
+        int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
+
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_my_location4);
+
+        if (myNearLocationView != null)
+            contentBinding.imgMarker.removeView(myNearLocationView);
+
+        myNearLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), MapActivity.this);
+
+        myNearLocationView.setImageBitmap(bitmap);
+        myNearLocationView.setLayoutParams(layoutParams);
+        myNearLocationView.setScaleType(ImageView.ScaleType.MATRIX);
+
+        contentBinding.imgMarker.addView(myNearLocationView);
     }
 
     private void removeAlMarker() {
@@ -1173,7 +1246,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 rttCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,STATUS,SSID,BSSID,RttStatus,Distance(Mm),DistanceStdDev(Mm),Rssi,timestamp,NumAttemptedMeasurements,NumSuccessfulMeasurements");
 
                 myLocationCsvManager = new CsvManager(fileName + "_MyLocation.csv");
-                myLocationCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,AP1 MAC,AP1 RANGE,AP2 MAC,AP2 RANGE,AP3 MAC,AP3 RANGE,AP4 MAC,AP4 RANGE,AP5 MAC,AP5 RANGE,AP6 MAC,AP6 RANGE,AP7 MAC,AP7 RANGE,AP8 MAC,AP8 RANGE,AP9 MAC,AP9 RANGE,AP10 MAC,AP10 RANGE,Median (X),Median (Y),DBscan (X),DBscan (Y),Reliability (X),Reliability (Y)");
+                myLocationCsvManager.Write("DATE,TIME,SEC,RUNTIME(ms),PTNUM,AP1 MAC,AP1 RANGE,AP2 MAC,AP2 RANGE,AP3 MAC,AP3 RANGE,AP4 MAC,AP4 RANGE,AP5 MAC,AP5 RANGE,AP6 MAC,AP6 RANGE,AP7 MAC,AP7 RANGE,AP8 MAC,AP8 RANGE,AP9 MAC,AP9 RANGE,AP10 MAC,AP10 RANGE,Median (X),Median (Y),DBscan (X),DBscan (Y),Reliability (X),Reliability (Y),Link (X),Link (Y)");
 
             }
 
@@ -1315,7 +1388,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
 //                        accessPointsSupporting80211mcInfo.clear();
 
-                        if (rawResultMap.size() > combination) {
+                        if (rawResultMap.size() >= combination) {
                             rttRangingResultCallback.getMyLocation(new ArrayList(rawResultMap.values()));
 
                             HashMap<String, Double> distanceMap = new HashMap<>();
@@ -1350,6 +1423,11 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                                 }
                             }
                         } else {
+
+                            Log.d("위치 연산1", "컷 " + accessPointsSupporting80211mcInfo.size() + " - " + rawResultMap.size());
+                            Log.d("위치 연산2 로우", accessPointsSupporting80211mcInfo.toString());
+                            Log.d("위치 연산3 필터링", rawResultMap.toString());
+
                             if (useScanCount == 10) {
                                 for (ScanResult scanResult : accessPointsSupporting80211mc.values()) {
                                     results.add(scanResult);
@@ -1777,6 +1855,8 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             }
 
             if (locationXList.size() == 0 || locationYList.size() == 0) {
+
+                Log.d("위치 연산2", "컷");
                 return;
             }
 
@@ -1890,9 +1970,9 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                     break;
             }
 
-            setMyLocationView(myMedianLocationView, medianLocation, R.drawable.ic_my_location);
-            setMyLocationView(myDbScanLocationView, dbscanLocation, R.drawable.ic_my_location2);
-            setMyLocationView(myReliabilityLocationView, reliabilityLocation, R.drawable.ic_my_location3);
+            setMyLocationView(medianLocation);
+            setMyLocationView2(dbscanLocation);
+            setMyLocationView3(reliabilityLocation);
 
             getNearestLink(nodeArrayList, linkArrayList, myLocation);
 
@@ -1916,12 +1996,17 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
             }
 
             if (myLocationCsvManager != null)
-                myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + apData + medianLocation.getX() + "," + medianLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY() + "," + reliabilityLocation.getX() + "," + reliabilityLocation.getY());
+                myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + apData + medianLocation.getX() + "," + medianLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY() + "," + reliabilityLocation.getX() + "," + reliabilityLocation.getY() + "," + myLocation2.getX() + "," + myLocation2.getY());
 
             contentBinding.txtTime.setText(DateUtils.getCurrentCsvFileName());
             contentBinding.txtLocation.setText(medianLocation.getX() + "m - " + medianLocation.getY() + "m");
             contentBinding.txtLocation2.setText(dbscanLocation.getX() + "m - " + dbscanLocation.getY() + "m");
             contentBinding.txtLocation3.setText(reliabilityLocation.getX() + "m - " + reliabilityLocation.getY() + "m");
+
+            Log.d("위치1", medianLocation.toString());
+            Log.d("위치2", dbscanLocation.toString());
+            Log.d("위치3", reliabilityLocation.toString());
+            Log.d("위치4", myLocation2.toString());
 
 //            list.clear();
 //            accessPointsSupporting80211mcInfo.clear();
@@ -1929,7 +2014,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
 
         //a,b의 포인트 좌표를 픽셀에서 M단위로 수정해야함
         private Link getNearestLink(ArrayList<Node> nodeArrayList, ArrayList<Link> linkArrayList, Point point) {
-            Point location = new Point();
+            myLocation2 = new Point();
             double distance = Double.MAX_VALUE;
             Link nearestLink = null;
 
@@ -1950,14 +2035,14 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 if (distance > temp) {
                     distance = temp;
                     nearestLink = link;
-                    location = nearLocation;
+                    myLocation2 = nearLocation;
                 }
             }
 
 //            Log.d("가장 가까운 링크", nearestLink.toString());
 //            Log.d("가장 가까운 링크 거리", distance + "m");
 
-            setMyLocationView(myNearLocationView, location, R.drawable.ic_my_location4);
+            setMyLocationView4(myLocation2);
 
             return nearestLink;
         }

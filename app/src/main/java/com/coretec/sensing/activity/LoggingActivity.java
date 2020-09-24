@@ -3,7 +3,6 @@ package com.coretec.sensing.activity;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Environment;
@@ -15,6 +14,14 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.databinding.DataBindingUtil;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 
 import com.coretec.sensing.R;
 import com.coretec.sensing.adapter.FragmentAdapter;
@@ -31,13 +38,6 @@ import com.google.android.material.navigation.NavigationView;
 import java.io.File;
 import java.util.ArrayList;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.GravityCompat;
-import androidx.databinding.DataBindingUtil;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.Fragment;
 import devlight.io.library.ntb.NavigationTabBar;
 
 public class LoggingActivity extends AppCompatActivity implements View.OnClickListener, NavigationView.OnNavigationItemSelectedListener {
@@ -179,11 +179,6 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
 
             }
         });
-
-        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_RTT)) {
-            Toast.makeText(this, "RTT를 지원하지 않아 일부 기능을 사용할 수 없습니다.", Toast.LENGTH_SHORT).show();
-//            finish();
-        }
     }
 
     private void initFragment() {
