@@ -1095,6 +1095,7 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 int position = listApImage.indexOf(imageView);
 
                 apHelper.deleteAp(imageView.getMacAddress());
+                apHashMap.remove(imageView.getMacAddress());
 
                 listApImage.remove(position);
                 contentBinding.imgMarker.removeView(imageView);
@@ -1272,9 +1273,23 @@ public class MapActivity extends AppCompatActivity implements OnTouchMapListener
                 }
             }
 
+            String temp = "";
+
+            switch (useAlgorithm) {
+                case 0:
+                    temp = "Median";
+                    break;
+                case 1:
+                    temp = "DBSCAN";
+                    break;
+                case 2:
+                    temp = "Reliability";
+                    break;
+            }
+
             algorithmSettingCsvManager = new CsvManager(fileName + "_AlgorithmSetting.csv");
-            algorithmSettingCsvManager.Write("RTT 정보 소멸 시간(ms),일괄 통신 요청 개수,AP 총 요청 개수,DB SCAN 반경(M),알고리즘 조합 개수,DB SCAN 필터링 기준,Reliability 임계치(m)");
-            algorithmSettingCsvManager.Write(removeInterval + "," + useScanCount + "," + apScanCount + "," + dbScanDistance + "," + combination + "," + dbScanFilter + "," + stdReliability);
+            algorithmSettingCsvManager.Write("RTT 정보 소멸 시간(ms),일괄 통신 요청 개수,AP 총 요청 개수,DB SCAN 반경(M),알고리즘 조합 개수,DB SCAN 필터링 기준,Reliability 임계치(m), 링크 연계 알고리즘");
+            algorithmSettingCsvManager.Write(removeInterval + "," + useScanCount + "," + apScanCount + "," + dbScanDistance + "," + combination + "," + dbScanFilter + "," + stdReliability + "," + temp);
         }
         startTimer();
 

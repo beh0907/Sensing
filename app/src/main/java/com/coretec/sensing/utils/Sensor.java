@@ -44,17 +44,17 @@ public class Sensor implements SensorEventListener {
 
     public void start() {
         sensorManager.registerListener(this, accelSensor,
-                SensorManager.SENSOR_DELAY_NORMAL);
+                SensorManager.SENSOR_DELAY_GAME);
         sensorManager.registerListener(this, magneticSensor,
-                SensorManager.SENSOR_DELAY_NORMAL);
+                SensorManager.SENSOR_DELAY_GAME);
         sensorManager.registerListener(this, gyroSensor,
-                SensorManager.SENSOR_DELAY_NORMAL);
+                SensorManager.SENSOR_DELAY_GAME);
         sensorManager.registerListener(this, pressureSensor,
-                SensorManager.SENSOR_DELAY_NORMAL);
+                SensorManager.SENSOR_DELAY_GAME);
         sensorManager.registerListener(this, temperatureSensor,
-                SensorManager.SENSOR_DELAY_NORMAL);
+                SensorManager.SENSOR_DELAY_GAME);
         sensorManager.registerListener(this, humiditySensor,
-                SensorManager.SENSOR_DELAY_NORMAL);
+                SensorManager.SENSOR_DELAY_GAME);
         isStart = true;
     }
 

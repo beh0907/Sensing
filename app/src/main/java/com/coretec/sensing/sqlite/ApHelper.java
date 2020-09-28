@@ -3,6 +3,7 @@ package com.coretec.sensing.sqlite;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import com.coretec.sensing.model.Ap;
 import com.coretec.sensing.model.Point;
@@ -88,7 +89,8 @@ public class ApHelper {
     }
 
     public void deleteAp(String macAddress) {
-        database.delete(TABLE_AP, KEY_MAC_ADDRESS + "=?", new String[]{macAddress});
+        Log.d("삭제 테스트", macAddress);
+        Log.d("삭제 테스트", database.delete(TABLE_AP, KEY_MAC_ADDRESS + "=?", new String[]{macAddress}) + "");
     }
 
     public void deleteAll() {
