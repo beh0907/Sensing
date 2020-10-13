@@ -1,283 +1,398 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="300dp"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_gravity="center"
-    android:orientation="vertical">
+    android:gravity="center">
 
-    <LinearLayout
-        android:visibility="gone"
-        android:id="@+id/groupData"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16sp"
-            android:gravity="center"
-            android:text="RTT 일괄 통신 객체 개수"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
-
-        <RadioGroup
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/radioOne"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="1개"
-                android:textSize="16sp" />
-
-            <RadioButton
-                android:id="@+id/radioTen"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="10개"
-                android:textSize="16sp" />
-
-        </RadioGroup>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16sp"
-            android:gravity="center"
-            android:text="RTT 정보 삭제 간격(ms)"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
-
-        <EditText
-            android:id="@+id/editRemoveInterval"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:inputType="numberDecimal"
-            android:text="2000" />
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1sp"
-        android:layout_margin="10sp"
-        android:layout_marginStart="20sp"
-        android:layout_marginTop="10sp"
-        android:layout_marginEnd="20sp"
-        android:background="@color/black" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16sp"
-            android:gravity="center"
-            android:text="RTT 총 통신 개수"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
-
-        <EditText
-            android:id="@+id/editApCount"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:inputType="numberDecimal"
-            android:text="15" />
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1sp"
-        android:layout_margin="10sp"
-        android:layout_marginStart="20sp"
-        android:layout_marginTop="10sp"
-        android:layout_marginEnd="20sp"
-        android:background="@color/black" />
-
-    <LinearLayout
-        android:id="@+id/groupType"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16sp"
-            android:gravity="center"
-            android:text="링크 연계 알고리즘"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
-
-        <RadioGroup
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/radioMedian"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="Median"
-                android:textSize="16sp" />
-
-            <RadioButton
-                android:id="@+id/radioDbScan"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="DBSCAN"
-                android:textSize="16sp" />
-
-            <RadioButton
-                android:id="@+id/radioReliability"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Reliability"
-                android:textSize="16sp" />
-
-
-        </RadioGroup>
-
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1sp"
-        android:layout_margin="10sp"
-        android:layout_marginStart="20sp"
-        android:layout_marginTop="10sp"
-        android:layout_marginEnd="20sp"
-        android:background="@color/black" />
-
-    <LinearLayout
-        android:id="@+id/groupDistance"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16sp"
-            android:text="DBSCAN 반경(m)"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
-
-        <EditText
-            android:id="@+id/editRadius"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:inputType="numberDecimal"
-            android:text="0.5" />
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1sp"
-        android:layout_margin="10sp"
-        android:layout_marginStart="20sp"
-        android:layout_marginTop="10sp"
-        android:layout_marginEnd="20sp"
-        android:background="@color/black" />
-
-    <LinearLayout
-        android:id="@+id/groupTrsut"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16sp"
-            android:text="Reliability 임계치(m)"
-            android:textColor="@color/black"
-            android:textSize="16sp" />
-
-        <EditText
-            android:id="@+id/editReliability"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:inputType="numberDecimal"
-            android:text="2.5" />
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1sp"
-        android:layout_margin="10sp"
-        android:layout_marginStart="20sp"
-        android:layout_marginTop="10sp"
-        android:layout_marginEnd="20sp"
-        android:background="@color/black" />
-
-    <LinearLayout
-        android:id="@+id/groupCombination"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
 
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:id="@+id/groupData"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16sp"
-                android:text="알고리즘 조합 수"
-                android:textColor="@color/black"
-                android:textSize="16sp" />
+                android:orientation="vertical"
+                android:visibility="gone">
 
-            <NumberPicker
-                android:id="@+id/pickerCombination"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16sp"
+                    android:gravity="center"
+                    android:text="RTT 일괄 통신 객체 개수"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+
+                <RadioGroup
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/radioOne"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="1개"
+                        android:textSize="16sp" />
+
+                    <RadioButton
+                        android:id="@+id/radioTen"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="10개"
+                        android:textSize="16sp" />
+
+                </RadioGroup>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16sp"
+                    android:gravity="center"
+                    android:text="RTT 정보 삭제 간격(ms)"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/editRemoveInterval"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:inputType="numberDecimal"
+                    android:text="2000" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1sp"
+                android:layout_margin="10sp"
+                android:layout_marginStart="20sp"
+                android:layout_marginTop="10sp"
+                android:layout_marginEnd="20sp"
+                android:background="@color/black" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16sp"
+                    android:gravity="center"
+                    android:text="RTT 총 통신 개수"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/editApCount"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:inputType="numberDecimal"
+                    android:text="15" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1sp"
+                android:layout_margin="10sp"
+                android:layout_marginStart="20sp"
+                android:layout_marginTop="10sp"
+                android:layout_marginEnd="20sp"
+                android:background="@color/black" />
+
+            <LinearLayout
+                android:id="@+id/groupType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16sp"
+                    android:gravity="center"
+                    android:text="링크 연계 알고리즘"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+
+                <RadioGroup
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/radioMedian"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="Median"
+                        android:textSize="16sp" />
+
+                    <RadioButton
+                        android:id="@+id/radioDbScan"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="DBSCAN"
+                        android:textSize="16sp" />
+
+                    <RadioButton
+                        android:id="@+id/radioReliability"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Reliability"
+                        android:textSize="16sp" />
+
+
+                </RadioGroup>
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1sp"
+                android:layout_margin="10sp"
+                android:layout_marginStart="20sp"
+                android:layout_marginTop="10sp"
+                android:layout_marginEnd="20sp"
+                android:background="@color/black" />
+
+            <LinearLayout
+                android:id="@+id/groupDistance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16sp"
+                    android:text="DBSCAN 반경(m)"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/editRadius"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:inputType="numberDecimal"
+                    android:text="0.5" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1sp"
+                android:layout_margin="10sp"
+                android:layout_marginStart="20sp"
+                android:layout_marginTop="10sp"
+                android:layout_marginEnd="20sp"
+                android:background="@color/black" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16sp"
+                    android:text="Reliability 임계치(m)"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/editReliability"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:inputType="numberDecimal"
+                    android:text="2.5" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1sp"
+                android:layout_margin="10sp"
+                android:layout_marginStart="20sp"
+                android:layout_marginTop="10sp"
+                android:layout_marginEnd="20sp"
+                android:background="@color/black" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16sp"
+                    android:text="측위 오차 거리(m)"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/editErrorDistance"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:inputType="numberDecimal"
+                    android:text="5" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1sp"
+                android:layout_margin="10sp"
+                android:layout_marginStart="20sp"
+                android:layout_marginTop="10sp"
+                android:layout_marginEnd="20sp"
+                android:background="@color/black" />
+
+
+            <LinearLayout
+                android:id="@+id/groupTrsut"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16sp"
+                    android:text="표출 알고리즘"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+
+                <LinearLayout
+                    android:id="@+id/groupOutput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/checkMedian"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:checked="true"
+                        android:gravity="center"
+                        android:text="중위"
+                        android:textSize="12sp" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/checkDbScan"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:checked="true"
+                        android:gravity="center"
+                        android:text="DB"
+                        android:textSize="12sp" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/checkReliability"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:checked="true"
+                        android:gravity="center"
+                        android:text="신뢰"
+                        android:textSize="12sp" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/checkCorrection"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:checked="true"
+                        android:gravity="center"
+                        android:text="보정"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1sp"
+                android:layout_margin="10sp"
+                android:layout_marginStart="20sp"
+                android:layout_marginTop="10sp"
+                android:layout_marginEnd="20sp"
+                android:background="@color/black" />
+
+            <LinearLayout
+                android:id="@+id/groupCombination"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16sp"
+                        android:text="알고리즘 조합 수"
+                        android:textColor="@color/black"
+                        android:textSize="16sp" />
+
+                    <NumberPicker
+                        android:id="@+id/pickerCombination"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="DBSCAN 포인트 수"
+                        android:textColor="@color/black"
+                        android:textSize="16sp" />
+
+                    <NumberPicker
+                        android:id="@+id/pickerFilter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center" />
+
+                </LinearLayout>
+
+            </LinearLayout>
 
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="DBSCAN 포인트 수"
-                android:textColor="@color/black"
-                android:textSize="16sp" />
-
-            <NumberPicker
-                android:id="@+id/pickerFilter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center" />
-
-        </LinearLayout>
-
-    </LinearLayout>
-</LinearLayout>
+    </ScrollView>
+</RelativeLayout>

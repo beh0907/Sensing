@@ -161,6 +161,10 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
     private int dbScanFilter = 4;
     //임계치 값
     private double stdReliability = 2.5;
+    //오차 거리 값 (위치 값이 튀는 경우를 방지하기 위한 기능)
+    private double errorDistance = 5;
+    //표출 알고리즘
+    private boolean isOutputMedian = true, isOutputDbScan = true, isOutputReliability = true, isOutputCorrection = true;
     //////////////////////////////////////////////////////////////////////////////
 
     //로깅 데이터 설정
@@ -171,15 +175,17 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
     private boolean isLoggingSensor = true;
     private boolean isLoggingLte = true;
 
-    //RTT 정보 요청 인터벌
+    //WIFI 정보 요청 인터벌
     private int wifiInterval = 30000;
     //RTT 정보 요청 인터벌
     private int rttInterval = 1000;
-    //RTT 정보 요청 인터벌
+    //위치정보 업데이트 인터벌
+    private int locationInterval = 1000;
+    //Bluetooth 정보 요청 인터벌
     private int blueToothInterval = 1000;
-    //RTT 정보 요청 인터벌
+    //Sensor 정보 요청 인터벌
     private int sensorInterval = 100;
-    //RTT 정보 요청 인터벌
+    //LTE 정보 요청 인터벌
     private int lteInterval = 1000;
 
     //현재 로깅 중인지 체크
@@ -221,13 +227,17 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
 
     //내 위치 및 링크 연계 조정위치 객체
     private Point myLocation;
-    private Point myLocation2;
+    private Point medianLocation;
+    private Point dbScanLocation;
+    private Point reliabilityLocation;
+    private Point correntionLocation;
     private Point nearLocation;
 
     //////////////////////////////////////////////////////////////////////////////
     //스캔 타이머
     private static TimerTask wifiTimer;
     private static TimerTask rttTimer;
+    private static TimerTask locationTimer;
     private static TimerTask bluetoothTimer;
     private static TimerTask sensorTimer;
     private static TimerTask lteTimer;
@@ -404,6 +414,11 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
         final EditText editApCount = dialogView.findViewById(R.id.editApCount);
         final EditText editReliability = dialogView.findViewById(R.id.editReliability);
         final EditText editRemoveInterval = dialogView.findViewById(R.id.editRemoveInterval);
+        final EditText editErrorDistance = dialogView.findViewById(R.id.editErrorDistance);
+        final CheckBox checkMedian = dialogView.findViewById(R.id.checkMedian);
+        final CheckBox checkDbScan = dialogView.findViewById(R.id.checkDbScan);
+        final CheckBox checkReliability = dialogView.findViewById(R.id.checkReliability);
+        final CheckBox checkCorrection = dialogView.findViewById(R.id.checkCorrection);
 
         pickerCombination.setMinValue(1);
         pickerCombination.setMaxValue(10);
@@ -426,6 +441,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
         editApCount.setText(apScanCount + "");
         editReliability.setText(stdReliability + "");
         editRemoveInterval.setText(removeInterval + "");
+        editErrorDistance.setText(errorDistance + "");
 
         if (useScanCount == 1)
             radioOne.setChecked(true);
@@ -438,6 +454,11 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
             radioDbScan.setChecked(true);
         else
             radioReliability.setChecked(true);
+
+        checkMedian.setChecked(isOutputMedian);
+        checkDbScan.setChecked(isOutputDbScan);
+        checkReliability.setChecked(isOutputReliability);
+        checkCorrection.setChecked(isOutputCorrection);
 
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
@@ -470,6 +491,14 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
                 //RTT 통신 주기(ms) 500 or 1000ms
                 stdReliability = Double.parseDouble(editReliability.getText().toString());
 
+                //오차 거리 값(m)
+                errorDistance = Double.parseDouble(editErrorDistance.getText().toString());
+
+                isOutputMedian = checkMedian.isChecked();
+                isOutputDbScan = checkDbScan.isChecked();
+                isOutputReliability = checkReliability.isChecked();
+                isOutputCorrection = checkCorrection.isChecked();
+
                 dialog.cancel();
             }
         });
@@ -497,6 +526,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
 
         final EditText editWifiInterval = dialogView.findViewById(R.id.editWifiInterval);
         final EditText editRttInterval = dialogView.findViewById(R.id.editRttInterval);
+        final EditText editLocationInterval = dialogView.findViewById(R.id.editLocationInterval);
         final EditText editBluetoothInterval = dialogView.findViewById(R.id.editBluetoothInterval);
         final EditText editSensorInterval = dialogView.findViewById(R.id.editSensorInterval);
         final EditText editLteInterval = dialogView.findViewById(R.id.editLteInterval);
@@ -509,6 +539,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
 
         editWifiInterval.setText(wifiInterval + "");
         editRttInterval.setText(rttInterval + "");
+        editLocationInterval.setText(locationInterval + "");
         editBluetoothInterval.setText(blueToothInterval + "");
         editSensorInterval.setText(sensorInterval + "");
         editLteInterval.setText(lteInterval + "");
@@ -536,6 +567,9 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
 
                 //RTT 주기 설정
                 rttInterval = Integer.parseInt(editRttInterval.getText().toString());
+
+                //위치정보 업데이트 주기 설정
+                locationInterval = Integer.parseInt(editRttInterval.getText().toString());
 
                 //블루투스 주기 설정
                 blueToothInterval = Integer.parseInt(editBluetoothInterval.getText().toString());
@@ -880,8 +914,39 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
         contentBinding.imgMarker.addView(imgDonut);
     }
 
+    public void setMedianLocation(Point point) {
+        if (medianLocation == null)
+            medianLocation = point;
+        else {
+            if (errorDistance >= Calculation.getPoint2PointDistance(medianLocation, point))
+                medianLocation = point;
+        }
+    }
+
+    public void setDbScanLocation(Point point) {
+        if (dbScanLocation == null)
+            dbScanLocation = point;
+        else {
+            if (errorDistance >= Calculation.getPoint2PointDistance(dbScanLocation, point))
+                dbScanLocation = point;
+        }
+    }
+
+    public void setReliabilityLocation(Point point) {
+        if (reliabilityLocation == null)
+            reliabilityLocation = point;
+        else {
+            if (errorDistance >= Calculation.getPoint2PointDistance(reliabilityLocation, point))
+                reliabilityLocation = point;
+        }
+    }
+
+
     //지정된 좌표 상에 이미지 표출
-    private void setMyLocationView(Point point) {
+    private void showMedianLocationView() {
+        if (!isOutputMedian)
+            return;
+
         int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
         int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
 
@@ -892,7 +957,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
         if (myMedianLocationView != null)
             contentBinding.imgMarker.removeView(myMedianLocationView);
 
-        myMedianLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), Map2Activity.this);
+        myMedianLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (medianLocation.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (medianLocation.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), Map2Activity.this);
 
         myMedianLocationView.setImageBitmap(bitmap);
         myMedianLocationView.setLayoutParams(layoutParams);
@@ -902,7 +967,10 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
     }
 
     //지정된 좌표 상에 이미지 표출
-    private void setMyLocationView2(Point point) {
+    private void showDbScanLocationView() {
+        if (!isOutputDbScan)
+            return;
+
         int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
         int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
 
@@ -913,7 +981,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
         if (myDbScanLocationView != null)
             contentBinding.imgMarker.removeView(myDbScanLocationView);
 
-        myDbScanLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), Map2Activity.this);
+        myDbScanLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (dbScanLocation.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (dbScanLocation.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), Map2Activity.this);
 
         myDbScanLocationView.setImageBitmap(bitmap);
         myDbScanLocationView.setLayoutParams(layoutParams);
@@ -923,7 +991,10 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
     }
 
     //지정된 좌표 상에 이미지 표출
-    private void setMyLocationView3(Point point) {
+    private void showReliabilityLocationView() {
+        if (!isOutputReliability)
+            return;
+
         int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
         int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
 
@@ -934,7 +1005,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
         if (myReliabilityLocationView != null)
             contentBinding.imgMarker.removeView(myReliabilityLocationView);
 
-        myReliabilityLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), Map2Activity.this);
+        myReliabilityLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (reliabilityLocation.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (reliabilityLocation.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), Map2Activity.this);
 
         myReliabilityLocationView.setImageBitmap(bitmap);
         myReliabilityLocationView.setLayoutParams(layoutParams);
@@ -944,7 +1015,10 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
     }
 
     //지정된 좌표 상에 이미지 표출
-    private void setMyLocationView4(Point point) {
+    private void showCorrectionLocationView() {
+        if (!isOutputCorrection)
+            return;
+
         int parentWidth = contentBinding.imgMap.getDrawable().getIntrinsicWidth();
         int parentHeight = contentBinding.imgMap.getDrawable().getIntrinsicHeight();
 
@@ -955,7 +1029,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
         if (myNearLocationView != null)
             contentBinding.imgMarker.removeView(myNearLocationView);
 
-        myNearLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (point.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (point.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), Map2Activity.this);
+        myNearLocationView = new MoveImageView(contentBinding.imgMap.savedMatrix2, parentWidth, parentHeight, (int) (correntionLocation.getX() * PIXEL_PER_METER_WIDTH + LEFT_BLANK_PIXEL), (int) (MAP_HEIGHT - (correntionLocation.getY() * PIXEL_PER_METER_HEIGHT) - BOTTOM_BLANK_PIXEL), Map2Activity.this);
 
         myNearLocationView.setImageBitmap(bitmap);
         myNearLocationView.setLayoutParams(layoutParams);
@@ -1280,16 +1354,18 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
             }
 
             algorithmSettingCsvManager = new CsvManager(fileName + "_AlgorithmSetting.csv");
-            algorithmSettingCsvManager.Write("RTT 정보 소멸 시간(ms),일괄 통신 요청 개수,AP 총 요청 개수,DB SCAN 반경(M),알고리즘 조합 개수,DB SCAN 필터링 기준,Reliability 임계치(m), 링크 연계 알고리즘");
-            algorithmSettingCsvManager.Write(removeInterval + "," + useScanCount + "," + apScanCount + "," + dbScanDistance + "," + combination + "," + dbScanFilter + "," + stdReliability + "," + temp);
+            algorithmSettingCsvManager.Write("RTT 정보 소멸 시간(ms),일괄 통신 요청 개수,AP 총 요청 개수,DB SCAN 반경(M),알고리즘 조합 개수,DB SCAN 필터링 기준,Reliability 임계치(m), 측위 오차 거리(m), 링크 연계 알고리즘");
+            algorithmSettingCsvManager.Write(removeInterval + "," + useScanCount + "," + apScanCount + "," + dbScanDistance + "," + combination + "," + dbScanFilter + "," + stdReliability + "," + errorDistance + "," + temp);
         }
         startTimer();
 
         if (isLoggingWifi)
             wifiStartScanning(wifiInterval);
 
-        if (isLoggingRtt)
+        if (isLoggingRtt) {
             rttStartScanning(rttInterval);
+            locationStartUpdating(locationInterval);
+        }
 
         if (isLoggingBluetooth)
             bluetoothStartScanning(blueToothInterval);
@@ -1463,6 +1539,26 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
         // 0초후 첫실행, 설정된 Delay마다 실행
         Timer timer = new Timer();
         timer.schedule(rttTimer, 0, delay);
+    }
+
+    private void locationStartUpdating(int delay) {
+        locationTimer = new TimerTask() {
+            public void run() {
+                runOnUiThread(new Runnable() { //ui 동작을 하기 위해 runOnUiThread 사용
+                    @SuppressLint("MissingPermission")
+                    public void run() {
+                        showMedianLocationView();
+                        showDbScanLocationView();
+                        showReliabilityLocationView();
+                        showCorrectionLocationView();
+                    }
+                });
+            }
+        };
+
+        // 0초후 첫실행, 설정된 Delay마다 실행
+        Timer timer = new Timer();
+        timer.schedule(locationTimer, 0, delay);
     }
 
     public void bluetoothStartScanning(int delay) {
@@ -1970,10 +2066,9 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
                     break;
             }
 
-            setMyLocationView(medianLocation);
-            setMyLocationView2(dbscanLocation);
-            setMyLocationView3(reliabilityLocation);
-
+            setMedianLocation(medianLocation);
+            setDbScanLocation(dbscanLocation);
+            setReliabilityLocation(reliabilityLocation);
             getNearestLink(nodeArrayList, linkArrayList, myLocation);
 
 //            Log.d("RTT 실내위치 측위", myLocation.toString());
@@ -1996,7 +2091,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
             }
 
             if (myLocationCsvManager != null)
-                myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + apData + medianLocation.getX() + "," + medianLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY() + "," + reliabilityLocation.getX() + "," + reliabilityLocation.getY() + "," + myLocation2.getX() + "," + myLocation2.getY());
+                myLocationCsvManager.Write(DateUtils.getCurrentDateTime() + "," + contentBinding.timerRanging.getTimeElapsed() + "," + ptNum + "," + apData + medianLocation.getX() + "," + medianLocation.getY() + "," + dbscanLocation.getX() + "," + dbscanLocation.getY() + "," + reliabilityLocation.getX() + "," + reliabilityLocation.getY() + "," + correntionLocation.getX() + "," + correntionLocation.getY());
 
 //            list.clear();
 //            accessPointsSupporting80211mcInfo.clear();
@@ -2004,7 +2099,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
 
         //a,b의 포인트 좌표를 픽셀에서 M단위로 수정해야함
         private Link getNearestLink(ArrayList<Node> nodeArrayList, ArrayList<Link> linkArrayList, Point point) {
-            myLocation2 = new Point();
+            correntionLocation = new Point();
             double distance = Double.MAX_VALUE;
             Link nearestLink = null;
 
@@ -2025,14 +2120,12 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
                 if (distance > temp) {
                     distance = temp;
                     nearestLink = link;
-                    myLocation2 = nearLocation;
+                    correntionLocation = nearLocation;
                 }
             }
 
 //            Log.d("가장 가까운 링크", nearestLink.toString());
 //            Log.d("가장 가까운 링크 거리", distance + "m");
-
-            setMyLocationView4(myLocation2);
 
             return nearestLink;
         }
