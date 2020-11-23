@@ -89,6 +89,17 @@ public class LoggingActivity extends AppCompatActivity implements View.OnClickLi
                 startActivity(intent);
                 finish();
                 return false;
+
+            case R.id.nav_custom_map:
+                intent = new Intent(this, CustomMapActivity.class);
+                startActivity(intent);
+                finish();
+                return false;
+
+            case R.id.nav_3d:
+                intent = new Intent(this, WebActivity.class);
+                startActivity(intent);
+                return false;
         }
         return true;
     }

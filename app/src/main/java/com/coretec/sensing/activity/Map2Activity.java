@@ -300,6 +300,17 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
             case R.id.nav_map2:
                 return false;
 
+            case R.id.nav_custom_map:
+                intent = new Intent(this, CustomMapActivity.class);
+                startActivity(intent);
+                finish();
+                return false;
+
+            case R.id.nav_3d:
+                intent = new Intent(this, WebActivity.class);
+                startActivity(intent);
+                return false;
+
             case R.id.nav_setting_paramter:
                 showSettingParameterDialog(Map2Activity.this);
                 return false;
@@ -415,6 +426,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
         final EditText editReliability = dialogView.findViewById(R.id.editReliability);
         final EditText editRemoveInterval = dialogView.findViewById(R.id.editRemoveInterval);
         final EditText editErrorDistance = dialogView.findViewById(R.id.editErrorDistance);
+        final EditText editLocationInterval = dialogView.findViewById(R.id.editLocationInterval);
         final CheckBox checkMedian = dialogView.findViewById(R.id.checkMedian);
         final CheckBox checkDbScan = dialogView.findViewById(R.id.checkDbScan);
         final CheckBox checkReliability = dialogView.findViewById(R.id.checkReliability);
@@ -442,6 +454,7 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
         editReliability.setText(stdReliability + "");
         editRemoveInterval.setText(removeInterval + "");
         editErrorDistance.setText(errorDistance + "");
+        editLocationInterval.setText(locationInterval + "");
 
         if (useScanCount == 1)
             radioOne.setChecked(true);
@@ -494,6 +507,9 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
                 //오차 거리 값(m)
                 errorDistance = Double.parseDouble(editErrorDistance.getText().toString());
 
+                //RTT 주기 설정
+                locationInterval = Integer.parseInt(editLocationInterval.getText().toString());
+
                 isOutputMedian = checkMedian.isChecked();
                 isOutputDbScan = checkDbScan.isChecked();
                 isOutputReliability = checkReliability.isChecked();
@@ -526,7 +542,6 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
 
         final EditText editWifiInterval = dialogView.findViewById(R.id.editWifiInterval);
         final EditText editRttInterval = dialogView.findViewById(R.id.editRttInterval);
-        final EditText editLocationInterval = dialogView.findViewById(R.id.editLocationInterval);
         final EditText editBluetoothInterval = dialogView.findViewById(R.id.editBluetoothInterval);
         final EditText editSensorInterval = dialogView.findViewById(R.id.editSensorInterval);
         final EditText editLteInterval = dialogView.findViewById(R.id.editLteInterval);
@@ -539,7 +554,6 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
 
         editWifiInterval.setText(wifiInterval + "");
         editRttInterval.setText(rttInterval + "");
-        editLocationInterval.setText(locationInterval + "");
         editBluetoothInterval.setText(blueToothInterval + "");
         editSensorInterval.setText(sensorInterval + "");
         editLteInterval.setText(lteInterval + "");
@@ -564,9 +578,6 @@ public class Map2Activity extends AppCompatActivity implements OnTouchMapListene
 
                 //와이파이 주기 설정
                 wifiInterval = Integer.parseInt(editWifiInterval.getText().toString());
-
-                //RTT 주기 설정
-                rttInterval = Integer.parseInt(editRttInterval.getText().toString());
 
                 //위치정보 업데이트 주기 설정
                 locationInterval = Integer.parseInt(editRttInterval.getText().toString());

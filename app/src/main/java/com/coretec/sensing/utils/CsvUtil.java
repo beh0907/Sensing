@@ -13,6 +13,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.coretec.sensing.utils.Const.MAPPath;
+
 public class CsvUtil {
 
     public static boolean readMapSettingCsv(String filePath) {
@@ -227,4 +229,16 @@ public class CsvUtil {
         csvManager.close();
     }
 
+    public static void writeCustomMapSetting() {
+        File linkFile = new File(MAPPath, "setting.csv");
+
+        if (linkFile.exists()) {
+            linkFile.delete();
+        }
+
+        CsvManager csvManager = new CsvManager(MAPPath, "setting.csv");
+        csvManager.Write("width,height,pixel/meter width,pixel/meter height");
+        csvManager.Write("2411,2040,21.5,22.4");
+        csvManager.close();
+    }
 }

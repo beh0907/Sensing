@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">RTT 실내측위 시스템</string>
+    <string name="app_name">RTT 실내위치측위 시스템</string>
 
     <string name="action_settings">Settings</string>
 
@@ -57,4 +57,10 @@
     <string name="strStart">출발</string>
     <string name="strEnd">도착</string>
     <string name="strSelectLocation">클릭 후 위치를 선택하세요 !</string>
+    <string name="title_activity_custom_map">CustomMapActivity</string>
+    <!--
+    This string is used for square devices and overridden by hello_world in
+    values-round/strings.xml for round devices.
+    -->
+    <string name="hello_world">Hello Square World!</string>
 </resources>
